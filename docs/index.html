@@ -1,0 +1,1494 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>営業ログ端末 — MVP プレビュー</title>
+  <meta name="description" content="Android向けMVP「営業ログ端末（SalesLogDevice）」のUIモック。ホーム画面ウィジェット、訪問チェックイン、Pixel Recorder共有受信、日報生成までを単一HTMLで確認できる。" />
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%231A1814'/%3E%3Cpath d='M16 18h32M16 28h32M16 38h20M44 44l4 4 8-8' stroke='%23D4541F' stroke-width='3' stroke-linecap='round' fill='none'/%3E%3C/svg%3E" />
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@400;500;600&family=Shippori+Mincho:wght@400;600;700&family=Zen+Kaku+Gothic+New:wght@400;500;700;900&display=swap" rel="stylesheet" />
+
+  <style>
+    :root {
+      --ink: #1B1A17;
+      --ink-deep: #0F0E0C;
+      --ink-soft: #2A2823;
+      --cream: #F1ECDD;
+      --cream-light: #FAF6EA;
+      --cream-paper: #F6F1E2;
+      --muted: #8C857A;
+      --muted-light: #C8C1B0;
+      --hairline-dark: #2E2C26;
+      --hairline-light: #D5CCB7;
+      --vermillion: #D4541F;
+      --vermillion-deep: #A93D14;
+      --teal: #2E5A6E;
+      --sage: #5C7A4A;
+      --amber: #C68A2D;
+      --shadow-warm: 0 30px 60px -20px rgba(40, 30, 20, 0.35), 0 12px 24px -12px rgba(40, 30, 20, 0.18);
+      --shadow-card: 0 1px 0 rgba(255,255,255,0.4) inset, 0 14px 28px -16px rgba(40, 30, 20, 0.25);
+      --jp-serif: 'Shippori Mincho', 'Hiragino Mincho ProN', 'Yu Mincho', serif;
+      --jp-sans: 'Zen Kaku Gothic New', 'Hiragino Sans', 'Yu Gothic', system-ui, sans-serif;
+      --display: 'Instrument Serif', 'Iowan Old Style', Georgia, serif;
+      --mono: 'JetBrains Mono', 'SFMono-Regular', Consolas, monospace;
+    }
+
+    * { box-sizing: border-box; }
+    html, body { margin: 0; padding: 0; }
+
+    body {
+      font-family: var(--jp-sans);
+      color: var(--ink);
+      background: var(--cream);
+      -webkit-font-smoothing: antialiased;
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    /* Subtle paper grain across the whole page */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 1;
+      opacity: 0.5;
+      background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 200'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2'/><feColorMatrix values='0 0 0 0 0.1 0 0 0 0 0.1 0 0 0 0 0.08 0 0 0 0.08 0'/></filter><rect width='200' height='200' filter='url(%23n)'/></svg>");
+      mix-blend-mode: multiply;
+    }
+
+    /* ===== Main 2-column layout ===== */
+    .stage {
+      position: relative;
+      z-index: 2;
+      display: grid;
+      grid-template-columns: minmax(320px, 360px) 1fr;
+      min-height: 100vh;
+    }
+
+    @media (max-width: 880px) {
+      .stage { grid-template-columns: 1fr; }
+    }
+
+    /* ============================================================
+       Control panel (dark editorial sidebar)
+       ============================================================ */
+    .control-panel {
+      background: var(--ink);
+      color: var(--cream);
+      padding: 36px 32px 40px;
+      display: flex;
+      flex-direction: column;
+      gap: 32px;
+      border-right: 1px solid var(--hairline-dark);
+      position: relative;
+    }
+
+    .control-panel::after {
+      /* vertical hairline rule near right edge */
+      content: '';
+      position: absolute;
+      top: 36px; bottom: 36px; right: -1px;
+      width: 1px;
+      background: linear-gradient(to bottom, transparent, var(--hairline-dark) 20%, var(--hairline-dark) 80%, transparent);
+    }
+
+    .brand-meta {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      font-family: var(--mono);
+      font-size: 10px;
+      letter-spacing: 0.18em;
+      color: var(--muted);
+      text-transform: uppercase;
+    }
+    .brand-meta::before {
+      content: '';
+      width: 6px; height: 6px;
+      background: var(--vermillion);
+      border-radius: 50%;
+      animation: pulse 2.4s ease-in-out infinite;
+    }
+    @keyframes pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.4; transform: scale(0.8); }
+    }
+
+    .brand-title {
+      font-family: var(--jp-serif);
+      font-weight: 600;
+      font-size: 32px;
+      line-height: 1.1;
+      margin: 14px 0 0;
+      letter-spacing: 0.02em;
+      color: var(--cream-light);
+    }
+    .brand-title em {
+      display: block;
+      font-family: var(--display);
+      font-style: italic;
+      font-weight: 400;
+      font-size: 26px;
+      color: var(--vermillion);
+      letter-spacing: 0;
+      margin-top: 4px;
+    }
+
+    .brand-desc {
+      margin: 16px 0 0;
+      font-size: 12.5px;
+      line-height: 1.7;
+      color: var(--muted-light);
+      max-width: 30ch;
+    }
+
+    .section-label {
+      display: flex;
+      align-items: baseline;
+      gap: 10px;
+      margin: 0 0 14px;
+      font-family: var(--jp-serif);
+      font-weight: 600;
+      font-size: 13px;
+      color: var(--cream-light);
+      letter-spacing: 0.04em;
+    }
+    .section-label span {
+      font-family: var(--mono);
+      font-size: 10px;
+      letter-spacing: 0.2em;
+      color: var(--muted);
+      text-transform: uppercase;
+    }
+
+    .nav-list, .state-list {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .nav-item, .state-item {
+      width: 100%;
+      background: transparent;
+      border: none;
+      color: var(--cream-light);
+      font: inherit;
+      text-align: left;
+      padding: 11px 12px;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      cursor: pointer;
+      border-left: 2px solid transparent;
+      transition: background 160ms ease, border-color 160ms ease, color 160ms ease, padding-left 200ms ease;
+      font-size: 14px;
+      font-family: var(--jp-sans);
+    }
+
+    .nav-item .num {
+      font-family: var(--mono);
+      font-size: 10.5px;
+      color: var(--muted);
+      letter-spacing: 0.1em;
+      min-width: 22px;
+    }
+
+    .nav-item:hover, .state-item:hover {
+      background: rgba(255, 244, 222, 0.04);
+      color: #fff;
+    }
+    .nav-item:hover .num { color: var(--vermillion); }
+
+    body[data-screen="home"]     .nav-item[data-screen="home"],
+    body[data-screen="checkin"]  .nav-item[data-screen="checkin"],
+    body[data-screen="share"]    .nav-item[data-screen="share"],
+    body[data-screen="report"]   .nav-item[data-screen="report"],
+    body[data-screen="settings"] .nav-item[data-screen="settings"],
+    body[data-screen="widget"]   .nav-item[data-screen="widget"] {
+      background: rgba(212, 84, 31, 0.08);
+      border-left-color: var(--vermillion);
+      color: #fff;
+      padding-left: 16px;
+    }
+    body[data-screen="home"]     .nav-item[data-screen="home"] .num,
+    body[data-screen="checkin"]  .nav-item[data-screen="checkin"] .num,
+    body[data-screen="share"]    .nav-item[data-screen="share"] .num,
+    body[data-screen="report"]   .nav-item[data-screen="report"] .num,
+    body[data-screen="settings"] .nav-item[data-screen="settings"] .num,
+    body[data-screen="widget"]   .nav-item[data-screen="widget"] .num { color: var(--vermillion); }
+
+    .state-item {
+      gap: 10px;
+      font-size: 13.5px;
+    }
+    .state-item::before {
+      content: '';
+      width: 9px; height: 9px;
+      border: 1px solid var(--muted);
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+    body[data-state="not_started"] .state-item[data-state="not_started"]::before,
+    body[data-state="working"]     .state-item[data-state="working"]::before,
+    body[data-state="visiting"]    .state-item[data-state="visiting"]::before,
+    body[data-state="finished"]    .state-item[data-state="finished"]::before {
+      background: var(--vermillion);
+      border-color: var(--vermillion);
+      box-shadow: 0 0 0 2px rgba(212, 84, 31, 0.2);
+    }
+    body[data-state="not_started"] .state-item[data-state="not_started"],
+    body[data-state="working"]     .state-item[data-state="working"],
+    body[data-state="visiting"]    .state-item[data-state="visiting"],
+    body[data-state="finished"]    .state-item[data-state="finished"] { color: #fff; }
+
+    .hint {
+      margin: 12px 0 0;
+      font-size: 11px;
+      color: var(--muted);
+      font-family: var(--mono);
+      letter-spacing: 0.05em;
+    }
+
+    .philosophy {
+      margin-top: auto;
+      padding-top: 28px;
+      border-top: 1px solid var(--hairline-dark);
+    }
+    .philosophy blockquote {
+      margin: 12px 0 0;
+      padding: 0;
+    }
+    .philosophy blockquote p {
+      font-family: var(--jp-serif);
+      font-size: 14px;
+      font-weight: 500;
+      line-height: 1.65;
+      color: var(--cream-light);
+      margin: 0;
+      letter-spacing: 0.02em;
+    }
+    .philosophy blockquote footer {
+      margin-top: 10px;
+      font-size: 11px;
+      color: var(--muted);
+      font-family: var(--mono);
+      letter-spacing: 0.04em;
+    }
+
+    /* ============================================================
+       Right side — caption + phone shell
+       ============================================================ */
+    .stage-right {
+      padding: 40px 48px 60px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 28px;
+      position: relative;
+      background:
+        radial-gradient(circle at 25% 0%, rgba(212, 84, 31, 0.06), transparent 40%),
+        radial-gradient(circle at 80% 70%, rgba(46, 90, 110, 0.05), transparent 50%),
+        var(--cream);
+    }
+
+    .caption {
+      align-self: stretch;
+      display: flex;
+      align-items: baseline;
+      gap: 14px;
+      padding-bottom: 14px;
+      border-bottom: 1px solid var(--hairline-light);
+    }
+    .caption-screen {
+      font-family: var(--jp-serif);
+      font-weight: 700;
+      font-size: 22px;
+      letter-spacing: 0.03em;
+      color: var(--ink);
+    }
+    .caption-divider {
+      font-family: var(--display);
+      font-style: italic;
+      color: var(--muted);
+      font-size: 22px;
+    }
+    .caption-state {
+      font-family: var(--display);
+      font-style: italic;
+      font-size: 22px;
+      color: var(--vermillion);
+    }
+    .caption-screen::after {
+      content: attr(data-en);
+      display: inline-block;
+      margin-left: 10px;
+      font-family: var(--mono);
+      font-size: 10.5px;
+      letter-spacing: 0.2em;
+      color: var(--muted);
+      text-transform: uppercase;
+      vertical-align: middle;
+      font-weight: 400;
+    }
+
+    /* ============================================================
+       Phone frame
+       ============================================================ */
+    .phone-shell {
+      position: relative;
+      filter: drop-shadow(0 40px 50px rgba(40, 30, 20, 0.25));
+      animation: rise 700ms cubic-bezier(0.22, 1, 0.36, 1) both;
+      animation-delay: 240ms;
+    }
+    @keyframes rise {
+      from { transform: translateY(20px); opacity: 0; }
+      to { transform: translateY(0); opacity: 1; }
+    }
+
+    .phone-bezel {
+      width: 360px;
+      height: 740px;
+      background: linear-gradient(155deg, #1A1814 0%, #0E0D0B 50%, #1F1C18 100%);
+      border-radius: 44px;
+      padding: 12px;
+      position: relative;
+      border: 1px solid #34302A;
+    }
+    .phone-bezel::after {
+      /* subtle bezel highlight */
+      content: '';
+      position: absolute;
+      inset: 1px;
+      border-radius: 43px;
+      border: 1px solid rgba(255, 244, 222, 0.05);
+      pointer-events: none;
+    }
+
+    .phone-screen {
+      width: 100%;
+      height: 100%;
+      background: var(--cream-light);
+      border-radius: 34px;
+      overflow: hidden;
+      position: relative;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .status-bar {
+      flex: 0 0 32px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 22px;
+      font-family: var(--mono);
+      font-size: 12px;
+      color: var(--ink);
+      font-weight: 500;
+      position: relative;
+    }
+    .status-bar .notch {
+      position: absolute;
+      left: 50%;
+      top: 6px;
+      transform: translateX(-50%);
+      width: 10px; height: 10px;
+      background: #050505;
+      border-radius: 50%;
+    }
+    .status-icons { display: flex; gap: 7px; align-items: center; }
+    .status-icons .icon-batt::after {
+      content: '';
+      display: inline-block;
+      margin-left: 4px;
+      width: 18px; height: 9px;
+      border: 1px solid var(--ink);
+      border-radius: 2px;
+      vertical-align: middle;
+      background: linear-gradient(to right, var(--ink) 85%, transparent 85%);
+    }
+
+    .screen-stage {
+      flex: 1;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .screen {
+      position: absolute;
+      inset: 0;
+      display: none;
+      flex-direction: column;
+      overflow-y: auto;
+      background: var(--cream-light);
+      scrollbar-width: thin;
+    }
+    .screen::-webkit-scrollbar { width: 4px; }
+    .screen::-webkit-scrollbar-thumb { background: var(--muted-light); border-radius: 2px; }
+
+    body[data-screen="home"]     .screen[data-screen="home"],
+    body[data-screen="checkin"]  .screen[data-screen="checkin"],
+    body[data-screen="share"]    .screen[data-screen="share"],
+    body[data-screen="report"]   .screen[data-screen="report"],
+    body[data-screen="settings"] .screen[data-screen="settings"],
+    body[data-screen="widget"]   .screen[data-screen="widget"] {
+      display: flex;
+      animation: screenIn 380ms cubic-bezier(0.22, 1, 0.36, 1) both;
+    }
+    @keyframes screenIn {
+      from { opacity: 0; transform: translateY(8px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .gesture-bar {
+      flex: 0 0 22px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .gesture-bar::before {
+      content: '';
+      width: 120px; height: 4px;
+      background: var(--ink);
+      opacity: 0.8;
+      border-radius: 2px;
+    }
+
+    /* ============================================================
+       Top app bar (in-screen)
+       ============================================================ */
+    .app-bar {
+      padding: 14px 18px 10px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid var(--hairline-light);
+    }
+    .app-bar h1 {
+      margin: 0;
+      font-family: var(--jp-serif);
+      font-weight: 600;
+      font-size: 17px;
+      letter-spacing: 0.04em;
+      color: var(--ink);
+    }
+    .app-bar .icon-btn {
+      width: 36px; height: 36px;
+      border: none;
+      background: transparent;
+      border-radius: 50%;
+      cursor: pointer;
+      display: grid;
+      place-items: center;
+      color: var(--ink-soft);
+    }
+    .app-bar .icon-btn:hover { background: rgba(40, 30, 20, 0.06); }
+
+    .back-btn {
+      width: 32px; height: 32px;
+      border: none; background: transparent;
+      border-radius: 50%;
+      cursor: pointer;
+      display: grid; place-items: center;
+      color: var(--ink);
+      margin-right: 6px;
+    }
+
+    /* ============================================================
+       HOME SCREEN
+       ============================================================ */
+    .home-body {
+      padding: 18px 18px 28px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    .status-card {
+      background: var(--cream-paper);
+      border: 1px solid var(--hairline-light);
+      border-radius: 20px;
+      padding: 20px;
+      position: relative;
+      overflow: hidden;
+    }
+    .status-card::before {
+      /* small editorial mark */
+      content: '';
+      position: absolute;
+      top: 18px; right: 18px;
+      width: 28px; height: 1px;
+      background: var(--ink);
+    }
+
+    .status-card .date {
+      font-family: var(--mono);
+      font-size: 11px;
+      letter-spacing: 0.12em;
+      color: var(--muted);
+      text-transform: uppercase;
+    }
+    .status-card .username {
+      font-family: var(--jp-serif);
+      font-weight: 700;
+      font-size: 22px;
+      color: var(--ink);
+      margin-top: 4px;
+      letter-spacing: 0.02em;
+    }
+    .status-card .state-line {
+      margin-top: 14px;
+      display: flex;
+      align-items: baseline;
+      gap: 10px;
+    }
+    .status-card .state-label {
+      font-family: var(--mono);
+      font-size: 10px;
+      letter-spacing: 0.18em;
+      color: var(--muted);
+      text-transform: uppercase;
+    }
+    .status-card .state-value {
+      font-family: var(--display);
+      font-style: italic;
+      font-size: 22px;
+      color: var(--vermillion);
+    }
+
+    .status-card .stats {
+      margin-top: 18px;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 18px;
+      padding-top: 16px;
+      border-top: 1px solid var(--hairline-light);
+    }
+    .stat-label {
+      font-family: var(--mono);
+      font-size: 10px;
+      letter-spacing: 0.15em;
+      color: var(--muted);
+      text-transform: uppercase;
+    }
+    .stat-value {
+      margin-top: 4px;
+      font-family: var(--jp-serif);
+      font-weight: 700;
+      font-size: 24px;
+      color: var(--ink);
+      letter-spacing: 0.02em;
+    }
+    .stat-value small {
+      font-size: 12px;
+      color: var(--muted);
+      margin-left: 4px;
+      font-weight: 400;
+    }
+
+    .primary-action {
+      width: 100%;
+      padding: 22px;
+      border: none;
+      border-radius: 20px;
+      background: var(--ink);
+      color: var(--cream-light);
+      font-family: var(--jp-serif);
+      font-weight: 700;
+      font-size: 22px;
+      letter-spacing: 0.06em;
+      cursor: pointer;
+      position: relative;
+      transition: transform 200ms ease, box-shadow 200ms ease;
+      box-shadow: var(--shadow-card);
+    }
+    .primary-action::after {
+      content: '→';
+      position: absolute;
+      right: 22px;
+      top: 50%;
+      transform: translateY(-50%);
+      font-family: var(--display);
+      font-style: italic;
+      color: var(--vermillion);
+      font-size: 26px;
+    }
+    .primary-action:hover { transform: translateY(-1px); }
+
+    body[data-state="visiting"] .primary-action {
+      background: var(--vermillion);
+      color: var(--cream-light);
+    }
+    body[data-state="visiting"] .primary-action::after { color: var(--cream-light); }
+    body[data-state="finished"] .primary-action {
+      background: var(--cream-paper);
+      color: var(--ink);
+      border: 1px solid var(--ink);
+    }
+    body[data-state="finished"] .primary-action::after { color: var(--vermillion); }
+
+    .secondary-action {
+      width: 100%;
+      padding: 14px;
+      border: 1px solid var(--hairline-light);
+      border-radius: 16px;
+      background: transparent;
+      color: var(--ink);
+      font-family: var(--jp-sans);
+      font-weight: 500;
+      font-size: 15px;
+      letter-spacing: 0.04em;
+      cursor: pointer;
+    }
+    .secondary-action:hover { background: rgba(40, 30, 20, 0.04); }
+
+    body[data-state="not_started"] .secondary-action,
+    body[data-state="visiting"]    .secondary-action,
+    body[data-state="finished"]    .secondary-action { display: none; }
+
+    .text-link {
+      align-self: center;
+      background: transparent;
+      border: none;
+      color: var(--ink);
+      font-size: 13px;
+      cursor: pointer;
+      padding: 8px 12px;
+      font-family: var(--jp-sans);
+      border-bottom: 1px solid var(--ink);
+      border-radius: 0;
+    }
+    .text-link:hover { color: var(--vermillion); border-bottom-color: var(--vermillion); }
+
+    .privacy-note {
+      margin: 6px 0 0;
+      font-size: 11px;
+      line-height: 1.7;
+      color: var(--muted);
+      font-family: var(--jp-sans);
+      letter-spacing: 0.02em;
+      padding-top: 14px;
+      border-top: 1px dashed var(--hairline-light);
+    }
+    .privacy-note::before {
+      content: '※';
+      font-family: var(--jp-serif);
+      color: var(--vermillion);
+      margin-right: 4px;
+    }
+
+    /* ============================================================
+       CHECKIN SCREEN
+       ============================================================ */
+    .form-body {
+      padding: 18px 18px 28px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      flex: 1;
+    }
+
+    .field-label {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      font-family: var(--mono);
+      font-size: 10px;
+      letter-spacing: 0.16em;
+      color: var(--muted);
+      text-transform: uppercase;
+      margin-bottom: 6px;
+    }
+    .field-label .required {
+      color: var(--vermillion);
+      font-family: var(--jp-serif);
+    }
+
+    .field {
+      display: flex;
+      flex-direction: column;
+    }
+    .text-input, .text-area {
+      background: var(--cream-paper);
+      border: 1px solid var(--hairline-light);
+      border-radius: 12px;
+      padding: 12px 14px;
+      font-family: var(--jp-sans);
+      font-size: 16px;
+      color: var(--ink);
+      letter-spacing: 0.02em;
+    }
+    .text-area { min-height: 100px; resize: none; }
+
+    .checkin-hero {
+      background:
+        linear-gradient(140deg, rgba(212, 84, 31, 0.08), transparent 60%),
+        var(--cream-paper);
+      border: 1px solid var(--hairline-light);
+      border-radius: 18px;
+      padding: 16px 18px;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+    .checkin-hero .pin {
+      width: 36px; height: 36px;
+      background: var(--ink);
+      color: var(--vermillion);
+      border-radius: 50%;
+      display: grid;
+      place-items: center;
+      font-family: var(--display);
+      font-style: italic;
+      font-size: 18px;
+    }
+    .checkin-hero .copy h3 {
+      margin: 0;
+      font-family: var(--jp-serif);
+      font-weight: 700;
+      font-size: 16px;
+      letter-spacing: 0.03em;
+    }
+    .checkin-hero .copy p {
+      margin: 4px 0 0;
+      font-size: 11.5px;
+      color: var(--muted);
+      letter-spacing: 0.02em;
+    }
+
+    /* ============================================================
+       SHARE SCREEN
+       ============================================================ */
+    .share-bind {
+      padding: 18px 18px 0;
+    }
+    .share-bind-card {
+      background: var(--ink);
+      color: var(--cream-light);
+      border-radius: 18px;
+      padding: 16px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .share-bind-card .tag {
+      font-family: var(--mono);
+      font-size: 10px;
+      letter-spacing: 0.18em;
+      color: var(--vermillion);
+      text-transform: uppercase;
+    }
+    .share-bind-card h3 {
+      margin: 4px 0 0;
+      font-family: var(--jp-serif);
+      font-weight: 700;
+      font-size: 16px;
+      letter-spacing: 0.03em;
+    }
+    .share-bind-card .clock {
+      margin-left: auto;
+      font-family: var(--mono);
+      font-size: 11px;
+      color: var(--cream-light);
+      opacity: 0.7;
+      letter-spacing: 0.08em;
+    }
+
+    .share-body {
+      padding: 14px 18px 22px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .share-title-row {
+      font-size: 12.5px;
+      color: var(--muted);
+      letter-spacing: 0.04em;
+    }
+    .share-title-row strong {
+      color: var(--ink);
+      font-family: var(--jp-serif);
+      font-weight: 700;
+      margin-left: 4px;
+    }
+
+    .recorder-preview {
+      background: var(--cream-paper);
+      border: 1px solid var(--hairline-light);
+      border-radius: 16px;
+      padding: 14px 16px;
+      font-family: var(--mono);
+      font-size: 11.5px;
+      line-height: 1.75;
+      color: var(--ink-soft);
+      max-height: 240px;
+      overflow-y: auto;
+      white-space: pre-wrap;
+      position: relative;
+    }
+    .recorder-preview::before {
+      content: 'Pixel Recorder';
+      position: absolute;
+      top: -8px;
+      left: 14px;
+      background: var(--cream-light);
+      padding: 0 8px;
+      font-family: var(--mono);
+      font-size: 9px;
+      letter-spacing: 0.18em;
+      color: var(--muted);
+      text-transform: uppercase;
+    }
+
+    /* ============================================================
+       REPORT SCREEN
+       ============================================================ */
+    .report-actions {
+      padding: 14px 18px 0;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+    .pill-btn {
+      padding: 12px 14px;
+      border-radius: 14px;
+      border: 1px solid var(--ink);
+      background: var(--ink);
+      color: var(--cream-light);
+      font-family: var(--jp-sans);
+      font-size: 13px;
+      font-weight: 500;
+      letter-spacing: 0.04em;
+      cursor: pointer;
+    }
+    .pill-btn.outline {
+      background: transparent;
+      color: var(--ink);
+    }
+    .report-markdown {
+      flex: 1;
+      margin: 14px 18px 22px;
+      padding: 18px;
+      background: var(--cream-paper);
+      border: 1px solid var(--hairline-light);
+      border-radius: 18px;
+      font-family: var(--mono);
+      font-size: 11px;
+      line-height: 1.75;
+      color: var(--ink);
+      overflow-y: auto;
+      white-space: pre-wrap;
+      position: relative;
+    }
+    .report-markdown::before {
+      content: '2026-05-27_山田太郎_営業日報.md';
+      position: absolute;
+      top: -8px;
+      left: 16px;
+      background: var(--cream-light);
+      padding: 0 8px;
+      font-family: var(--mono);
+      font-size: 9px;
+      letter-spacing: 0.1em;
+      color: var(--muted);
+    }
+    .report-markdown b { color: var(--vermillion); font-weight: 600; }
+    .report-markdown u { text-decoration: none; color: var(--teal); font-weight: 500; }
+
+    /* ============================================================
+       SETTINGS SCREEN
+       ============================================================ */
+    .settings-body {
+      padding: 18px 18px 28px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+    .settings-body .pair {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    /* ============================================================
+       WIDGET SCREEN — show on faux home wallpaper
+       ============================================================ */
+    .widget-stage {
+      flex: 1;
+      background:
+        radial-gradient(circle at 50% 8%, rgba(255, 224, 180, 0.4), transparent 50%),
+        linear-gradient(180deg, #C68A2D 0%, #D4541F 26%, #963718 60%, #2E1F18 100%);
+      display: flex;
+      flex-direction: column;
+      padding: 24px 16px 14px;
+      color: var(--cream-light);
+      position: relative;
+    }
+    .widget-stage::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 200'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/><feColorMatrix values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0.06 0'/></filter><rect width='200' height='200' filter='url(%23n)'/></svg>");
+      pointer-events: none;
+    }
+
+    .home-clock {
+      text-align: center;
+      font-family: var(--display);
+      font-weight: 400;
+      font-size: 64px;
+      letter-spacing: 0.02em;
+      line-height: 1;
+      color: var(--cream-light);
+      filter: drop-shadow(0 1px 0 rgba(0,0,0,0.25));
+      margin-top: 22px;
+    }
+    .home-clock .date {
+      display: block;
+      margin-top: 8px;
+      font-family: var(--jp-sans);
+      font-weight: 500;
+      font-size: 13px;
+      letter-spacing: 0.06em;
+      opacity: 0.9;
+    }
+
+    .widget-card {
+      margin-top: auto;
+      margin-bottom: 32px;
+      background: rgba(250, 246, 234, 0.96);
+      border-radius: 22px;
+      padding: 14px 14px 12px;
+      color: var(--ink);
+      box-shadow: 0 12px 32px rgba(0, 0, 0, 0.25);
+      backdrop-filter: blur(6px);
+      position: relative;
+      z-index: 1;
+    }
+    .widget-card .widget-title {
+      font-family: var(--jp-serif);
+      font-weight: 700;
+      font-size: 13px;
+      letter-spacing: 0.04em;
+    }
+    .widget-card .widget-sub {
+      font-family: var(--mono);
+      font-size: 10px;
+      letter-spacing: 0.06em;
+      color: var(--muted);
+      margin-top: 2px;
+    }
+    .widget-buttons {
+      margin-top: 10px;
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 6px;
+    }
+    .widget-btn {
+      padding: 12px 4px;
+      border-radius: 12px;
+      border: none;
+      background: var(--muted-light);
+      color: var(--cream-light);
+      font-family: var(--jp-sans);
+      font-weight: 500;
+      font-size: 11px;
+      letter-spacing: 0.02em;
+      cursor: pointer;
+      line-height: 1.3;
+      transition: transform 120ms ease;
+    }
+    .widget-btn[data-action="checkout"] { /* default */ }
+    .widget-btn:hover { transform: translateY(-1px); }
+
+    body[data-state="not_started"] .widget-btn[data-action="start"]    { background: var(--ink); }
+    body[data-state="working"]     .widget-btn[data-action="checkin"]  { background: var(--ink); }
+    body[data-state="working"]     .widget-btn[data-action="finish"]   { background: var(--ink); }
+    body[data-state="visiting"]    .widget-btn[data-action="checkout"] { background: var(--vermillion); }
+    body[data-state="finished"]    .widget-btn { background: var(--muted-light); }
+
+    /* Faux dock */
+    .home-dock {
+      display: flex;
+      justify-content: center;
+      gap: 18px;
+      padding: 6px 0;
+    }
+    .home-dock-icon {
+      width: 38px; height: 38px;
+      border-radius: 12px;
+      background: rgba(250, 246, 234, 0.18);
+      backdrop-filter: blur(8px);
+    }
+
+    /* ============================================================
+       Footer note
+       ============================================================ */
+    .stage-footer {
+      max-width: 460px;
+      text-align: center;
+    }
+    .stage-footer p {
+      font-size: 12px;
+      color: var(--muted);
+      line-height: 1.6;
+      letter-spacing: 0.03em;
+      font-family: var(--jp-sans);
+    }
+    .stage-footer .seal {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-family: var(--mono);
+      font-size: 10px;
+      letter-spacing: 0.18em;
+      color: var(--ink);
+      padding: 4px 10px;
+      border: 1px solid var(--ink);
+      border-radius: 30px;
+      margin-bottom: 12px;
+      text-transform: uppercase;
+    }
+    .stage-footer .seal::before {
+      content: '';
+      width: 5px; height: 5px;
+      background: var(--vermillion);
+      border-radius: 50%;
+    }
+
+    /* Stagger reveal */
+    .control-panel > * { animation: panelIn 600ms cubic-bezier(0.22, 1, 0.36, 1) both; }
+    .control-panel > *:nth-child(1) { animation-delay: 0ms; }
+    .control-panel > *:nth-child(2) { animation-delay: 80ms; }
+    .control-panel > *:nth-child(3) { animation-delay: 160ms; }
+    .control-panel > *:nth-child(4) { animation-delay: 240ms; }
+    @keyframes panelIn {
+      from { opacity: 0; transform: translateX(-12px); }
+      to { opacity: 1; transform: translateX(0); }
+    }
+  </style>
+</head>
+<body data-screen="home" data-state="working">
+
+  <main class="stage">
+
+    <!-- ===================== Control Panel ===================== -->
+    <aside class="control-panel">
+      <div class="brand">
+        <span class="brand-meta">Pixel Field Client / v0.1.0 MVP</span>
+        <h1 class="brand-title">
+          営業ログ端末
+          <em>SalesLogDevice</em>
+        </h1>
+        <p class="brand-desc">
+          外回り営業の日報・議事録を、ホーム画面ウィジェット1タップで残す端末。Pixel Recorder の文字起こしと連動する。
+        </p>
+      </div>
+
+      <nav class="nav-section">
+        <h2 class="section-label">画面 <span>Screen</span></h2>
+        <ul class="nav-list" role="radiogroup" aria-label="表示する画面">
+          <li><button type="button" class="nav-item" data-screen="home"><span class="num">01</span><span class="label">ホーム</span></button></li>
+          <li><button type="button" class="nav-item" data-screen="checkin"><span class="num">02</span><span class="label">訪問チェックイン</span></button></li>
+          <li><button type="button" class="nav-item" data-screen="share"><span class="num">03</span><span class="label">商談メモ取込み</span></button></li>
+          <li><button type="button" class="nav-item" data-screen="report"><span class="num">04</span><span class="label">日報プレビュー</span></button></li>
+          <li><button type="button" class="nav-item" data-screen="settings"><span class="num">05</span><span class="label">設定</span></button></li>
+          <li><button type="button" class="nav-item" data-screen="widget"><span class="num">06</span><span class="label">ホームウィジェット</span></button></li>
+        </ul>
+      </nav>
+
+      <div class="state-section">
+        <h2 class="section-label">状態 <span>App State</span></h2>
+        <ul class="state-list" role="radiogroup" aria-label="アプリ状態">
+          <li><button type="button" class="state-item" data-state="not_started">未開始</button></li>
+          <li><button type="button" class="state-item" data-state="working">営業中</button></li>
+          <li><button type="button" class="state-item" data-state="visiting">訪問中</button></li>
+          <li><button type="button" class="state-item" data-state="finished">営業終了済み</button></li>
+        </ul>
+        <p class="hint">ホーム／ウィジェットの表示に反映</p>
+      </div>
+
+      <div class="philosophy">
+        <h2 class="section-label">設計思想 <span>Why</span></h2>
+        <blockquote>
+          <p>「高機能なSFA」ではなく、<br>「日報が勝手にできる<br>営業ログ端末」を作る。</p>
+          <footer>機能追加より、操作数削減を優先。</footer>
+        </blockquote>
+      </div>
+    </aside>
+
+    <!-- ===================== Stage Right ===================== -->
+    <section class="stage-right">
+      <div class="caption">
+        <span class="caption-screen" id="caption-screen" data-en="Screen">ホーム画面</span>
+        <span class="caption-divider">/</span>
+        <span class="caption-state" id="caption-state">営業中</span>
+      </div>
+
+      <div class="phone-shell">
+        <div class="phone-bezel">
+          <div class="phone-screen">
+
+            <div class="status-bar">
+              <span class="time">9:42</span>
+              <span class="notch" aria-hidden="true"></span>
+              <span class="status-icons">
+                <span class="icon-signal">5G</span>
+                <span class="icon-batt">87%</span>
+              </span>
+            </div>
+
+            <div class="screen-stage">
+
+              <!-- ============== 01 HOME ============== -->
+              <article class="screen" data-screen="home" aria-labelledby="home-title">
+                <header class="app-bar">
+                  <h1 id="home-title">営業ログ端末</h1>
+                  <button class="icon-btn" aria-label="設定">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.6 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.6a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+                  </button>
+                </header>
+
+                <div class="home-body">
+                  <div class="status-card">
+                    <div class="date" id="home-date">2026.05.27  TUE</div>
+                    <div class="username">山田 太郎</div>
+
+                    <div class="state-line">
+                      <span class="state-label">State</span>
+                      <span class="state-value" id="home-state-text">営業中</span>
+                    </div>
+
+                    <div class="stats">
+                      <div class="stat">
+                        <div class="stat-label">訪問件数</div>
+                        <div class="stat-value"><span id="visit-count">2</span><small>件</small></div>
+                      </div>
+                      <div class="stat">
+                        <div class="stat-label">録音メモ</div>
+                        <div class="stat-value"><span id="recorder-count">1</span><small>件</small></div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <button class="primary-action" id="primary-action">訪問チェックイン</button>
+                  <button class="secondary-action">営業終了</button>
+
+                  <button class="text-link">日報プレビューを開く</button>
+
+                  <p class="privacy-note">営業中だけ訪問ログを残します。位置情報は営業ログ作成のために使われます。</p>
+                </div>
+              </article>
+
+              <!-- ============== 02 CHECKIN ============== -->
+              <article class="screen" data-screen="checkin">
+                <header class="app-bar">
+                  <div style="display:flex; align-items:center;">
+                    <button class="back-btn" aria-label="戻る">
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+                    </button>
+                    <h1>訪問チェックイン</h1>
+                  </div>
+                </header>
+
+                <div class="form-body">
+                  <div class="checkin-hero">
+                    <div class="pin">●</div>
+                    <div class="copy">
+                      <h3>訪問先で1タップ記録</h3>
+                      <p>位置情報は営業ログ作成のために使われます</p>
+                    </div>
+                  </div>
+
+                  <div class="field">
+                    <label class="field-label">訪問先名 <span class="required">必須</span></label>
+                    <input class="text-input" value="株式会社ABC" />
+                  </div>
+
+                  <div class="field">
+                    <label class="field-label">メモ <span>任意</span></label>
+                    <textarea class="text-area">既存システムからの移行相談。担当者は鈴木部長。</textarea>
+                  </div>
+
+                  <button class="primary-action" style="margin-top: auto;">チェックイン</button>
+                </div>
+              </article>
+
+              <!-- ============== 03 SHARE ============== -->
+              <article class="screen" data-screen="share">
+                <header class="app-bar">
+                  <h1>商談メモを取り込み</h1>
+                </header>
+
+                <div class="share-bind">
+                  <div class="share-bind-card">
+                    <div>
+                      <div class="tag">Active Visit</div>
+                      <h3>株式会社ABC に紐づけます</h3>
+                    </div>
+                    <div class="clock">10:48</div>
+                  </div>
+                </div>
+
+                <div class="share-body">
+                  <div class="share-title-row">タイトル: <strong>ABCさん 1次商談</strong></div>
+
+                  <div class="recorder-preview">## 要約
+- 既存システムの不満点が明確
+- 弊社プランへの好感触
+- 価格は決裁会議で確定
+
+## 決定事項
+- 提案資料を再構成して再訪
+- 月額プラン X / Y / Z の比較表を準備
+
+## 次アクション
+- 来週水曜10時に再訪、提案資料を持参
+- 価格表のカスタム見積もりを準備
+- 鈴木部長宛にメールで議事録共有</div>
+
+                  <button class="primary-action">この内容で取り込む</button>
+                </div>
+              </article>
+
+              <!-- ============== 04 REPORT ============== -->
+              <article class="screen" data-screen="report">
+                <header class="app-bar">
+                  <div style="display:flex; align-items:center;">
+                    <button class="back-btn" aria-label="戻る">
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+                    </button>
+                    <h1>日報プレビュー</h1>
+                  </div>
+                </header>
+
+                <div class="report-actions">
+                  <button class="pill-btn">Drive 保存</button>
+                  <button class="pill-btn outline">Sheets 追記</button>
+                </div>
+
+                <div class="report-markdown"># 営業日報
+日付: 2026-05-27
+担当: 山田 太郎
+
+## 稼働
+開始: 09:02
+終了: 18:11
+訪問件数: 4件
+総稼働: 9時間9分
+
+## 訪問1
+訪問先: <b>株式会社ABC</b>
+時間: 10:03 - 10:48
+滞在: 45分
+位置: 35.66034, 139.65782
+
+メモ: 既存システムからの移行相談
+
+### 商談メモ
+**ABCさん 1次商談**
+## 要約
+- 既存システムの不満点が明確
+- 弊社プランへの好感触
+
+### 次アクション
+- <u>来週水曜10時に再訪、提案資料を持参</u>
+- <u>価格表のカスタム見積もりを準備</u>
+
+## 訪問2
+訪問先: <b>株式会社デルタ</b>
+時間: 13:15 - 14:02
+滞在: 47分
+位置: 35.65823, 139.70214
+
+### 商談メモ
+（録音メモなし）
+
+## 訪問3
+訪問先: <b>合同会社エコー</b>
+時間: 15:20 - 16:05
+滞在: 45分
+
+### 次アクション
+- <u>来月度の予算枠について再確認</u>
+
+## 訪問4
+訪問先: <b>株式会社フォックス</b>
+時間: 17:00 - 17:48
+滞在: 48分
+</div>
+              </article>
+
+              <!-- ============== 05 SETTINGS ============== -->
+              <article class="screen" data-screen="settings">
+                <header class="app-bar">
+                  <div style="display:flex; align-items:center;">
+                    <button class="back-btn" aria-label="戻る">
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+                    </button>
+                    <h1>設定</h1>
+                  </div>
+                </header>
+
+                <div class="settings-body">
+                  <div class="field">
+                    <label class="field-label">担当者名</label>
+                    <input class="text-input" value="山田 太郎" />
+                  </div>
+                  <div class="field">
+                    <label class="field-label">チーム名</label>
+                    <input class="text-input" value="法人営業 第2課" />
+                  </div>
+                  <div class="field">
+                    <label class="field-label">Drive フォルダ ID</label>
+                    <input class="text-input" value="1AbC...mock-folder" />
+                  </div>
+                  <div class="field">
+                    <label class="field-label">Sheets スプレッドシート ID</label>
+                    <input class="text-input" value="1XyZ...mock-sheet" />
+                  </div>
+                  <div class="field">
+                    <label class="field-label">Sheets シート名</label>
+                    <input class="text-input" value="活動履歴" />
+                  </div>
+
+                  <p class="privacy-note" style="margin-top: 4px;">位置情報は営業中だけ訪問ログを残すために使われます。</p>
+
+                  <button class="primary-action" style="font-size:18px; padding:16px;">保存</button>
+
+                  <div class="pair">
+                    <button class="pill-btn outline">テスト保存 (Drive)</button>
+                    <button class="pill-btn outline">テスト追記 (Sheets)</button>
+                  </div>
+                </div>
+              </article>
+
+              <!-- ============== 06 WIDGET ============== -->
+              <article class="screen" data-screen="widget">
+                <div class="widget-stage">
+                  <div class="home-clock">
+                    9:42
+                    <span class="date">2026年5月27日（火）</span>
+                  </div>
+
+                  <div class="widget-card">
+                    <div class="widget-title">営業ログ <span style="font-family: var(--mono); font-weight: 400; font-size: 10px; color: var(--muted); margin-left: 6px;">9:42</span></div>
+                    <div class="widget-sub" id="widget-status">状態: 営業中  訪問 2件 / 録音 1件</div>
+                    <div class="widget-buttons">
+                      <button class="widget-btn" data-action="start">営業<br>開始</button>
+                      <button class="widget-btn" data-action="checkin">チェック<br>イン</button>
+                      <button class="widget-btn" data-action="checkout">チェック<br>アウト</button>
+                      <button class="widget-btn" data-action="finish">営業<br>終了</button>
+                    </div>
+                  </div>
+
+                  <div class="home-dock">
+                    <div class="home-dock-icon"></div>
+                    <div class="home-dock-icon"></div>
+                    <div class="home-dock-icon"></div>
+                    <div class="home-dock-icon"></div>
+                    <div class="home-dock-icon"></div>
+                  </div>
+                </div>
+              </article>
+
+            </div>
+
+            <div class="gesture-bar" aria-hidden="true"></div>
+          </div>
+        </div>
+      </div>
+
+      <footer class="stage-footer">
+        <div class="seal">MVP MOCK · NOT INSTRUMENTED</div>
+        <p>これは見た目の確認用モックです。実際のロジックは Android プロジェクト（Kotlin / Jetpack Compose / Room / Mock Drive・Sheets）で実装済み。</p>
+      </footer>
+    </section>
+
+  </main>
+
+  <script>
+    (function () {
+      const body = document.body;
+
+      const SCREEN_LABEL = {
+        home: 'ホーム画面',
+        checkin: 'チェックイン画面',
+        share: '商談メモ取込み',
+        report: '日報プレビュー',
+        settings: '設定',
+        widget: 'ホームウィジェット',
+      };
+      const STATE_LABEL = {
+        not_started: '未開始',
+        working: '営業中',
+        visiting: '訪問中',
+        finished: '営業終了済み',
+      };
+      const PRIMARY_BY_STATE = {
+        not_started: '営業開始',
+        working: '訪問チェックイン',
+        visiting: 'チェックアウト',
+        finished: '日報プレビューを開く',
+      };
+      const COUNTS = {
+        not_started: { visit: 0, recorder: 0 },
+        working:     { visit: 2, recorder: 1 },
+        visiting:    { visit: 3, recorder: 2 },
+        finished:    { visit: 4, recorder: 3 },
+      };
+      const WIDGET_STATUS = {
+        not_started: '状態: 未開始     訪問 0件 / 録音 0件',
+        working:     '状態: 営業中     訪問 2件 / 録音 1件',
+        visiting:    '状態: 訪問中     訪問 3件 / 録音 2件',
+        finished:    '状態: 営業終了済 訪問 4件 / 録音 3件',
+      };
+
+      const captionScreen = document.getElementById('caption-screen');
+      const captionState  = document.getElementById('caption-state');
+      const primaryAction = document.getElementById('primary-action');
+      const homeStateText = document.getElementById('home-state-text');
+      const visitCount    = document.getElementById('visit-count');
+      const recorderCount = document.getElementById('recorder-count');
+      const widgetStatus  = document.getElementById('widget-status');
+
+      function update() {
+        const screen = body.dataset.screen;
+        const state  = body.dataset.state;
+
+        captionScreen.textContent = SCREEN_LABEL[screen] || screen;
+        captionState.textContent  = STATE_LABEL[state]   || state;
+
+        if (primaryAction) primaryAction.textContent = PRIMARY_BY_STATE[state];
+        if (homeStateText) homeStateText.textContent = STATE_LABEL[state];
+        const counts = COUNTS[state];
+        if (visitCount)    visitCount.textContent    = counts.visit;
+        if (recorderCount) recorderCount.textContent = counts.recorder;
+        if (widgetStatus)  widgetStatus.textContent  = WIDGET_STATUS[state];
+      }
+
+      document.querySelectorAll('.nav-item[data-screen]').forEach(btn => {
+        btn.addEventListener('click', () => {
+          body.dataset.screen = btn.dataset.screen;
+          update();
+        });
+      });
+      document.querySelectorAll('.state-item[data-state]').forEach(btn => {
+        btn.addEventListener('click', () => {
+          body.dataset.state = btn.dataset.state;
+          update();
+        });
+      });
+
+      update();
+    })();
+  </script>
+</body>
+</html>

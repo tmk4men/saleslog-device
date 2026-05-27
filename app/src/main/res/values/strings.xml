@@ -1,0 +1,27 @@
+<resources>
+    <string name="app_name">営業ログ端末</string>
+    <string name="widget_label">営業ログ</string>
+
+    <!-- Home -->
+    <string name="home_state_not_started">未開始</string>
+    <string name="home_state_working">営業中</string>
+    <string name="home_state_visiting">訪問中</string>
+    <string name="home_state_finished">営業終了済み</string>
+
+    <string name="action_start_work">営業開始</string>
+    <string name="action_check_in">訪問チェックイン</string>
+    <string name="action_check_out">チェックアウト</string>
+    <string name="action_finish_work">営業終了</string>
+    <string name="action_view_report">日報プレビュー</string>
+
+    <!-- Messages -->
+    <string name="msg_location_disabled">位置情報を取得できません。端末の位置情報をONにしてください。</string>
+    <string name="msg_need_start_before_checkin">営業開始後にチェックインできます。</string>
+    <string name="msg_cannot_finish_during_visit">訪問中は営業終了できません。チェックアウトしてください。</string>
+    <string name="msg_drive_save_failed">Drive保存に失敗しました。日報は端末内に保存されています。</string>
+    <string name="msg_sheets_append_failed">Sheetsへの追記に失敗しました。あとで再送できます。</string>
+    <string name="msg_empty_recorder_text">共有テキストが空でした。</string>
+    <string name="msg_share_requires_session">営業開始後に共有テキストを受け取れます。</string>
+
+    <string name="privacy_location_notice">営業中だけ訪問ログを残します。位置情報は営業ログ作成のために使われます。</string>
+</resources>

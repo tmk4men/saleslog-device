@@ -22,6 +22,7 @@ class GoogleSheetsRepositoryMock(private val context: Context) : GoogleSheetsRep
             val file = File(dir, "${spreadsheetId.ifBlank { "local" }}_${sheetName.ifBlank { "sheet" }}.csv")
             file.appendText(rows.joinToString("\n") { row -> row.joinToString(",") { escapeCsv(it) } } + "\n")
             Log.i(TAG, "Mock Sheets appended ${rows.size} row(s) to ${file.absolutePath}")
+            Unit
         }
     }
 

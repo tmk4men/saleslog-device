@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">営業ログ端末</string>
+    <string name="app_name">FieldLog</string>
     <string name="widget_label">営業ログ</string>
 
     <!-- Home -->

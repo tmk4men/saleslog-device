@@ -24,7 +24,7 @@ class AppendActivityToSheetsUseCase(
     /**
      * 列構成:
      * 日付, 担当者, 営業開始, 営業終了, 訪問先, チェックイン, チェックアウト,
-     * 滞在(分), 緯度, 経度, 録音メモ有無, Drive日報URL, 作成日時
+     * 滞在(分), 緯度, 経度, 録音メモ有無, AI要約, Drive日報URL, 作成日時
      */
     suspend operator fun invoke(sessionId: Long, driveUrl: String?): SheetsSyncResult {
         val session = sessions.getById(sessionId)
@@ -33,11 +33,16 @@ class AppendActivityToSheetsUseCase(
         val s = settings.get()
 
         val rows: List<List<String>> = if (visitList.isEmpty()) {
-            listOf(buildRow(session, null, null, driveUrl, false))
+            listOf(buildRow(session, null, null, driveUrl, false, ""))
         } else {
             visitList.map { v ->
-                val hasMemo = recorders.getByVisit(v.id).isNotEmpty()
-                buildRow(session, v, v.durationMinutes, driveUrl, hasMemo)
+                val recs = recorders.getByVisit(v.id)
+                val summaryCell = recs
+                    .mapNotNull { it.summary?.takeIf(String::isNotBlank) }
+                    .joinToString(" / ")
+                    .replace("\n", " ")
+                    .take(MAX_SUMMARY_CELL_CHARS)
+                buildRow(session, v, v.durationMinutes, driveUrl, recs.isNotEmpty(), summaryCell)
             }
         }
 
@@ -70,6 +75,7 @@ class AppendActivityToSheetsUseCase(
         durationMinutes: Int?,
         driveUrl: String?,
         hasMemo: Boolean,
+        summaryCell: String,
     ): List<String> = listOf(
         session.date,
         session.userName,
@@ -82,7 +88,12 @@ class AppendActivityToSheetsUseCase(
         visit?.checkInLatitude?.let { "%.5f".format(it) }.orEmpty(),
         visit?.checkInLongitude?.let { "%.5f".format(it) }.orEmpty(),
         if (hasMemo) "あり" else "なし",
+        summaryCell,
         driveUrl.orEmpty(),
         DateUtils.formatDateTime(System.currentTimeMillis()),
     )
+
+    companion object {
+        private const val MAX_SUMMARY_CELL_CHARS = 500
+    }
 }

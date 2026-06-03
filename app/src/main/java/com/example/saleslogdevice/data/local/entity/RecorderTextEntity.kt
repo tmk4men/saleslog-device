@@ -15,6 +15,8 @@ data class RecorderTextEntity(
     val title: String? = null,
     val rawText: String,
     val formattedMinutes: String,
+    /** オンデバイスAI（または非対応端末ではヒューリスティック）で生成した要約Markdown。未生成なら null。 */
+    val summary: String? = null,
     val createdAt: Long = System.currentTimeMillis(),
     val updatedAt: Long = System.currentTimeMillis(),
 )

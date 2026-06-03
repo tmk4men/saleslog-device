@@ -5,6 +5,8 @@ import com.example.saleslogdevice.data.local.entity.RecorderTextEntity
 import com.example.saleslogdevice.data.repository.RecorderTextRepository
 import com.example.saleslogdevice.data.repository.VisitLogRepository
 import com.example.saleslogdevice.data.repository.WorkSessionRepository
+import com.example.saleslogdevice.domain.ai.SummarizationInput
+import com.example.saleslogdevice.domain.ai.Summarizer
 
 sealed class ReceiveResult {
     /** 訪問中: 自動で訪問ログに紐づけた */
@@ -20,10 +22,16 @@ class ReceiveRecorderTextUseCase(
     private val visits: VisitLogRepository,
     private val recorders: RecorderTextRepository,
     private val transactor: Transactor,
+    private val summarizer: Summarizer,
 ) {
     suspend operator fun invoke(title: String?, rawText: String): ReceiveResult {
         val cleaned = rawText.trim()
         if (cleaned.isEmpty()) return ReceiveResult.EmptyText
+
+        // 要約は端末内推論（Gemini Nano 等）が走り得るため、DBトランザクションの外で先に実行する。
+        val summary = runCatching {
+            summarizer.summarize(SummarizationInput(transcript = cleaned, title = title)).toMarkdown()
+        }.getOrNull()?.ifBlank { null }
 
         return transactor.run {
             val session = sessions.getActiveWorking() ?: return@run ReceiveResult.NoActiveSession
@@ -36,6 +44,7 @@ class ReceiveRecorderTextUseCase(
                 title = title,
                 rawText = cleaned,
                 formattedMinutes = formatted,
+                summary = summary,
             )
             val id = recorders.insert(base)
             val saved = base.copy(id = id)

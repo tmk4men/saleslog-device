@@ -1,7 +1,6 @@
 package com.example.saleslogdevice.ui.share
 
 import android.net.Uri
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -12,11 +11,16 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Scaffold
@@ -30,6 +34,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -64,7 +69,16 @@ fun ShareReceiveScreen(
     }
 
     Scaffold(
-        topBar = { TopAppBar(title = { Text(if (state.isAudio) "録音を取り込み" else "商談メモを取り込み") }) },
+        topBar = {
+            TopAppBar(
+                title = { Text(if (state.isAudio) "録音を取り込み" else "商談メモを取り込み") },
+                navigationIcon = {
+                    IconButton(onClick = onClose) {
+                        Icon(Icons.Filled.Close, contentDescription = "取り込みをキャンセル")
+                    }
+                },
+            )
+        },
         snackbarHost = { SnackbarHost(snackbar) },
     ) { padding ->
         Column(
@@ -147,11 +161,12 @@ private fun VisitChoiceRow(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable(onClick = onClick)
+            .selectable(selected = selected, onClick = onClick, role = Role.RadioButton)
             .padding(horizontal = 8.dp, vertical = 4.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        RadioButton(selected = selected, onClick = onClick)
+        // 行全体を selectable にしているので RadioButton 自体はクリック対象にしない（二重操作を防ぐ）。
+        RadioButton(selected = selected, onClick = null)
         Text(label, modifier = Modifier.weight(1f), fontSize = 15.sp)
         if (statusLabel != null) {
             Text(

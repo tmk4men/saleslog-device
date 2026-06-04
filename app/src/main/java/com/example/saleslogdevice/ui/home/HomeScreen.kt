@@ -30,6 +30,7 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CenterAlignedTopAppBar
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Icon
@@ -113,6 +114,7 @@ fun HomeScreen(
             visitCount = state.visitCount,
             recorderCount = state.recorderCount,
             appState = state.appState,
+            loading = state.loading,
             onPrimary = {
                 when (state.appState) {
                     AppState.NOT_STARTED -> viewModel.startWork()
@@ -141,6 +143,7 @@ private fun Content(
     visitCount: Int,
     recorderCount: Int,
     appState: AppState,
+    loading: Boolean,
     onPrimary: () -> Unit,
     onSecondary: () -> Unit,
     onReportPreview: () -> Unit,
@@ -178,19 +181,26 @@ private fun Content(
             )
         }
 
-        PrimaryAction(appState = appState, onClick = onPrimary)
+        PrimaryAction(appState = appState, loading = loading, onClick = onPrimary)
 
         secondaryLabel(appState)?.let { label ->
             FilledTonalButton(
                 onClick = onSecondary,
+                enabled = !loading,
                 modifier = Modifier
                     .fillMaxWidth()
                     .heightIn(min = 56.dp),
                 shape = MaterialTheme.shapes.medium,
             ) {
-                Icon(Icons.Filled.Flag, contentDescription = null, modifier = Modifier.size(20.dp))
-                Spacer(Modifier.size(8.dp))
-                Text(label, style = MaterialTheme.typography.titleMedium)
+                if (loading) {
+                    CircularProgressIndicator(modifier = Modifier.size(20.dp), strokeWidth = 2.dp)
+                    Spacer(Modifier.size(8.dp))
+                    Text("処理中…", style = MaterialTheme.typography.titleMedium)
+                } else {
+                    Icon(Icons.Filled.Flag, contentDescription = null, modifier = Modifier.size(20.dp))
+                    Spacer(Modifier.size(8.dp))
+                    Text(label, style = MaterialTheme.typography.titleMedium)
+                }
             }
         }
 
@@ -321,9 +331,10 @@ private fun StatCard(
 }
 
 @Composable
-private fun PrimaryAction(appState: AppState, onClick: () -> Unit) {
+private fun PrimaryAction(appState: AppState, loading: Boolean, onClick: () -> Unit) {
     Button(
         onClick = onClick,
+        enabled = !loading,
         modifier = Modifier
             .fillMaxWidth()
             .heightIn(min = 88.dp),
@@ -332,12 +343,25 @@ private fun PrimaryAction(appState: AppState, onClick: () -> Unit) {
             containerColor = primaryButtonColor(appState),
         ),
     ) {
-        Icon(primaryIcon(appState), contentDescription = null, modifier = Modifier.size(28.dp))
-        Spacer(Modifier.size(12.dp))
-        Text(
-            text = primaryLabel(appState),
-            style = MaterialTheme.typography.headlineSmall,
-        )
+        if (loading) {
+            CircularProgressIndicator(
+                modifier = Modifier.size(28.dp),
+                color = Color.White,
+                strokeWidth = 3.dp,
+            )
+            Spacer(Modifier.size(12.dp))
+            Text(
+                text = "処理中…",
+                style = MaterialTheme.typography.headlineSmall,
+            )
+        } else {
+            Icon(primaryIcon(appState), contentDescription = null, modifier = Modifier.size(28.dp))
+            Spacer(Modifier.size(12.dp))
+            Text(
+                text = primaryLabel(appState),
+                style = MaterialTheme.typography.headlineSmall,
+            )
+        }
     }
 }
 

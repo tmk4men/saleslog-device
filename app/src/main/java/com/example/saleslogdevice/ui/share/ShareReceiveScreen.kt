@@ -3,13 +3,16 @@ package com.example.saleslogdevice.ui.share
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
@@ -95,7 +98,17 @@ fun ShareReceiveScreen(
                     .fillMaxWidth()
                     .heightIn(min = 72.dp),
             ) {
-                Text("この内容で取り込む", fontSize = 20.sp, fontWeight = FontWeight.Bold)
+                if (state.submitting) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(22.dp),
+                        color = MaterialTheme.colorScheme.onPrimary,
+                        strokeWidth = 3.dp,
+                    )
+                    Spacer(Modifier.size(12.dp))
+                    Text("要約中…", fontSize = 20.sp, fontWeight = FontWeight.Bold)
+                } else {
+                    Text("この内容で取り込む", fontSize = 20.sp, fontWeight = FontWeight.Bold)
+                }
             }
         }
     }

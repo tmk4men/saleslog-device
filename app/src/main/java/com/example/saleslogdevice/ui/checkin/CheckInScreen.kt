@@ -4,12 +4,16 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
@@ -80,7 +84,17 @@ fun CheckInScreen(
                     .fillMaxWidth()
                     .heightIn(min = 80.dp),
             ) {
-                Text("チェックイン", fontSize = 22.sp, fontWeight = FontWeight.Bold)
+                if (state.submitting) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(24.dp),
+                        color = MaterialTheme.colorScheme.onPrimary,
+                        strokeWidth = 3.dp,
+                    )
+                    Spacer(Modifier.size(12.dp))
+                    Text("処理中…", fontSize = 22.sp, fontWeight = FontWeight.Bold)
+                } else {
+                    Text("チェックイン", fontSize = 22.sp, fontWeight = FontWeight.Bold)
+                }
             }
             Text(
                 "位置情報は営業ログ作成のために使われます。",

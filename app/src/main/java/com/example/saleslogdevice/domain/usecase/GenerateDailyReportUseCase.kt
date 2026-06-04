@@ -86,11 +86,6 @@ class GenerateDailyReportUseCase(
                 } else {
                     linked.forEach { rec ->
                         if (!rec.title.isNullOrBlank()) appendLine("**${rec.title}**")
-                        if (!rec.summary.isNullOrBlank()) {
-                            appendLine("_AI要約_")
-                            appendLine(rec.summary.trim())
-                            appendLine()
-                        }
                         appendLine(rec.formattedMinutes.trim())
                         appendLine()
                     }
@@ -109,11 +104,6 @@ class GenerateDailyReportUseCase(
             appendLine("## 未紐づけ商談メモ")
             unlinked.forEach { rec ->
                 if (!rec.title.isNullOrBlank()) appendLine("**${rec.title}**")
-                if (!rec.summary.isNullOrBlank()) {
-                    appendLine("_AI要約_")
-                    appendLine(rec.summary.trim())
-                    appendLine()
-                }
                 appendLine(rec.formattedMinutes.trim())
                 appendLine()
             }

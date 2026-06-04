@@ -31,16 +31,11 @@ class AppendActivityToSheetsUseCase(
         val visitList = visits.getBySession(sessionId)
 
         val rows: List<List<String>> = if (visitList.isEmpty()) {
-            listOf(buildRow(session, null, null, false, ""))
+            listOf(buildRow(session, null, null, false))
         } else {
             visitList.map { v ->
                 val recs = recorders.getByVisit(v.id)
-                val summaryCell = recs
-                    .mapNotNull { it.summary?.takeIf(String::isNotBlank) }
-                    .joinToString(" / ")
-                    .replace("\n", " ")
-                    .take(MAX_SUMMARY_CELL_CHARS)
-                buildRow(session, v, v.durationMinutes, recs.isNotEmpty(), summaryCell)
+                buildRow(session, v, v.durationMinutes, recs.isNotEmpty())
             }
         }
 
@@ -72,7 +67,6 @@ class AppendActivityToSheetsUseCase(
         visit: com.example.saleslogdevice.data.local.entity.VisitLogEntity?,
         durationMinutes: Int?,
         hasMemo: Boolean,
-        summaryCell: String,
     ): List<String> = listOf(
         session.date,
         session.userName,
@@ -89,20 +83,17 @@ class AppendActivityToSheetsUseCase(
                 else null
         }.orEmpty(),
         if (hasMemo) "あり" else "なし",
-        summaryCell,
         DateUtils.formatDateTime(System.currentTimeMillis()),
     )
 
     companion object {
-        private const val MAX_SUMMARY_CELL_CHARS = 500
-
         /** 端末内CSVのファイル名（拡張子なし）。共有/書き出し時のファイル名にもなる。 */
         const val CSV_NAME = "活動履歴"
 
         /** CSVの列見出し。buildRow の並びと必ず一致させること。 */
         val COLUMNS = listOf(
             "日付", "担当者", "営業開始", "営業終了", "訪問先", "チェックイン", "チェックアウト",
-            "滞在(分)", "住所", "録音メモ有無", "AI要約", "作成日時",
+            "滞在(分)", "住所", "録音メモ有無", "作成日時",
         )
     }
 }

@@ -1,10 +1,8 @@
 package com.example.saleslogdevice.di
 
 import android.content.Context
-import com.example.saleslogdevice.data.ai.OnDeviceSummarizer
 import com.example.saleslogdevice.data.local.AppDatabase
 import com.example.saleslogdevice.data.local.Transactor
-import com.example.saleslogdevice.domain.ai.Summarizer
 import com.example.saleslogdevice.data.repository.GoogleSheetsRepository
 import com.example.saleslogdevice.data.repository.GoogleSheetsRepositoryMock
 import com.example.saleslogdevice.data.repository.AudioRecordingRepository
@@ -30,7 +28,7 @@ import kotlinx.coroutines.SupervisorJob
 
 /**
  * 軽量DI。MVP段階ではDIライブラリを入れずにこれで賄う。
- * Drive/Sheets は Mock を差し込んでいる。本番API実装が出来たら driveRepo / sheetsRepo を差し替える。
+ * 活動履歴は sheetsRepo(端末内CSV) に蓄積する。将来Google連携する場合はここを差し替える。
  */
 class ServiceLocator(appContext: Context) {
 
@@ -56,19 +54,13 @@ class ServiceLocator(appContext: Context) {
     fun activityCsvFile(): java.io.File? =
         sheetsRepoImpl.fileFor("", AppendActivityToSheetsUseCase.CSV_NAME).takeIf { it.exists() }
 
-    /**
-     * 端末内要約。Gemini Nano 対応端末なら primary を差し込む（現状は未配線でヒューリスティックにフォールバック）。
-     * 対応後は OnDeviceSummarizer(primary = GeminiNanoSummarizer()) へ変更するだけでよい。
-     */
-    val summarizer: Summarizer = OnDeviceSummarizer()
-
     val locationProvider = LocationProvider(appContext)
 
     val startWorkSession = StartWorkSessionUseCase(workSessions, userSettings, transactor)
     val endWorkSession = EndWorkSessionUseCase(workSessions, visitLogs, transactor)
     val checkIn = CheckInUseCase(workSessions, visitLogs, transactor)
     val checkOut = CheckOutUseCase(workSessions, visitLogs)
-    val receiveRecorderText = ReceiveRecorderTextUseCase(workSessions, visitLogs, recorderTexts, transactor, summarizer)
+    val receiveRecorderText = ReceiveRecorderTextUseCase(workSessions, visitLogs, recorderTexts, transactor)
     val receiveAudio = ReceiveAudioUseCase(workSessions, visitLogs, audioRecordings, audioFileStore, transactor)
     val generateDailyReport = GenerateDailyReportUseCase(workSessions, visitLogs, recorderTexts)
     val appendActivityToSheets = AppendActivityToSheetsUseCase(

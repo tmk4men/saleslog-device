@@ -27,7 +27,7 @@ import com.example.saleslogdevice.data.local.entity.WorkSessionEntity
         SyncLogEntity::class,
         AudioRecordingEntity::class,
     ],
-    version = 5,
+    version = 6,
     exportSchema = false,
 )
 @TypeConverters(Converters::class)

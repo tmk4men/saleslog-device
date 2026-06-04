@@ -142,7 +142,7 @@ fun ShareReceiveScreen(
                         strokeWidth = 3.dp,
                     )
                     Spacer(Modifier.size(12.dp))
-                    Text(if (state.isAudio) "取り込み中…" else "要約中…", fontSize = 20.sp, fontWeight = FontWeight.Bold)
+                    Text("取り込み中…", fontSize = 20.sp, fontWeight = FontWeight.Bold)
                 } else {
                     Text(if (state.isAudio) "この録音を取り込む" else "この内容で取り込む", fontSize = 20.sp, fontWeight = FontWeight.Bold)
                 }

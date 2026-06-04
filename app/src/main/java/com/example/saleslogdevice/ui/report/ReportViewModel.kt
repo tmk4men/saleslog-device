@@ -17,9 +17,7 @@ data class ReportUiState(
     val loading: Boolean = true,
     val markdown: String = "",
     val sessionId: Long? = null,
-    val driveUrl: String? = null,
-    val syncingDrive: Boolean = false,
-    val syncingSheets: Boolean = false,
+    val recording: Boolean = false,
     val message: String? = null,
     /** 共有すべきCSVの絶対パス。画面側が共有Intentを起動したら consumeShare() でクリアする。 */
     val csvSharePath: String? = null,
@@ -79,27 +77,13 @@ class ReportViewModel(application: Application) : AndroidViewModel(application) 
         }
     }
 
-    fun saveToDrive() = viewModelScope.launch {
-        val sessionId = _state.value.sessionId ?: return@launch
-        _state.update { it.copy(syncingDrive = true) }
-        val result = locator.syncReportToDrive(sessionId, _state.value.markdown)
-        _state.update {
-            it.copy(
-                syncingDrive = false,
-                driveUrl = result.driveUrl ?: it.driveUrl,
-                message = if (result.isSuccess) "Driveに保存しました（Mock）"
-                    else "Drive保存に失敗しました。日報は端末内に保存されています。",
-            )
-        }
-    }
-
     fun appendToSheets() = viewModelScope.launch {
         val sessionId = _state.value.sessionId ?: return@launch
-        _state.update { it.copy(syncingSheets = true) }
-        val result = locator.appendActivityToSheets(sessionId, _state.value.driveUrl)
+        _state.update { it.copy(recording = true) }
+        val result = locator.appendActivityToSheets(sessionId)
         _state.update {
             it.copy(
-                syncingSheets = false,
+                recording = false,
                 message = if (result.isSuccess) "CSVに記録しました"
                     else "CSVへの記録に失敗しました。あとで再実行できます。",
             )

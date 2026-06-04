@@ -15,7 +15,6 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
@@ -93,22 +92,14 @@ fun ReportScreen(
         ) {
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
                 Button(
-                    onClick = viewModel::saveToDrive,
-                    enabled = !state.syncingDrive && state.sessionId != null,
-                    modifier = Modifier.weight(1f),
-                ) { Text("Drive保存") }
-                OutlinedButton(
                     onClick = viewModel::appendToSheets,
-                    enabled = !state.syncingSheets && state.sessionId != null,
+                    enabled = !state.recording && state.sessionId != null,
                     modifier = Modifier.weight(1f),
                 ) { Text("CSVに記録") }
-            }
-            OutlinedButton(
-                onClick = viewModel::shareCsv,
-                modifier = Modifier.fillMaxWidth(),
-            ) { Text("CSVを共有 / 書き出し") }
-            if (state.driveUrl != null) {
-                Text("Drive: ${state.driveUrl}", fontSize = 12.sp, color = MaterialTheme.colorScheme.primary)
+                OutlinedButton(
+                    onClick = viewModel::shareCsv,
+                    modifier = Modifier.weight(1f),
+                ) { Text("CSVを共有 / 書き出し") }
             }
             if (state.recordings.isNotEmpty()) {
                 Text("録音 (${state.recordings.size}件)", fontWeight = FontWeight.SemiBold, fontSize = 14.sp)

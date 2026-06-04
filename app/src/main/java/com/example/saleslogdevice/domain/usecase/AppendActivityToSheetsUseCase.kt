@@ -4,7 +4,6 @@ import com.example.saleslogdevice.data.local.entity.SyncLogEntity
 import com.example.saleslogdevice.data.repository.GoogleSheetsRepository
 import com.example.saleslogdevice.data.repository.RecorderTextRepository
 import com.example.saleslogdevice.data.repository.SyncLogRepository
-import com.example.saleslogdevice.data.repository.UserSettingsRepository
 import com.example.saleslogdevice.data.repository.VisitLogRepository
 import com.example.saleslogdevice.data.repository.WorkSessionRepository
 import com.example.saleslogdevice.domain.model.SyncStatus
@@ -18,22 +17,21 @@ class AppendActivityToSheetsUseCase(
     private val sessions: WorkSessionRepository,
     private val visits: VisitLogRepository,
     private val recorders: RecorderTextRepository,
-    private val settings: UserSettingsRepository,
     private val syncLogs: SyncLogRepository,
 ) {
     /**
+     * 活動履歴を端末内CSV（<filesDir>/sheets/活動履歴.csv）に追記する。
      * 列構成:
      * 日付, 担当者, 営業開始, 営業終了, 訪問先, チェックイン, チェックアウト,
-     * 滞在(分), 住所, 録音メモ有無, AI要約, Drive日報URL, 作成日時
+     * 滞在(分), 住所, 録音メモ有無, AI要約, 作成日時
      */
-    suspend operator fun invoke(sessionId: Long, driveUrl: String?): SheetsSyncResult {
+    suspend operator fun invoke(sessionId: Long): SheetsSyncResult {
         val session = sessions.getById(sessionId)
             ?: return SheetsSyncResult(false, "session not found")
         val visitList = visits.getBySession(sessionId)
-        val s = settings.get()
 
         val rows: List<List<String>> = if (visitList.isEmpty()) {
-            listOf(buildRow(session, null, null, driveUrl, false, ""))
+            listOf(buildRow(session, null, null, false, ""))
         } else {
             visitList.map { v ->
                 val recs = recorders.getByVisit(v.id)
@@ -42,11 +40,11 @@ class AppendActivityToSheetsUseCase(
                     .joinToString(" / ")
                     .replace("\n", " ")
                     .take(MAX_SUMMARY_CELL_CHARS)
-                buildRow(session, v, v.durationMinutes, driveUrl, recs.isNotEmpty(), summaryCell)
+                buildRow(session, v, v.durationMinutes, recs.isNotEmpty(), summaryCell)
             }
         }
 
-        val result = sheets.appendRows(s.spreadsheetId, s.sheetName, COLUMNS, rows)
+        val result = sheets.appendRows(spreadsheetId = "", sheetName = CSV_NAME, header = COLUMNS, rows = rows)
         return result.fold(
             onSuccess = {
                 sessions.update(session.copy(syncedToSheets = true))
@@ -73,7 +71,6 @@ class AppendActivityToSheetsUseCase(
         session: com.example.saleslogdevice.data.local.entity.WorkSessionEntity,
         visit: com.example.saleslogdevice.data.local.entity.VisitLogEntity?,
         durationMinutes: Int?,
-        driveUrl: String?,
         hasMemo: Boolean,
         summaryCell: String,
     ): List<String> = listOf(
@@ -93,17 +90,19 @@ class AppendActivityToSheetsUseCase(
         }.orEmpty(),
         if (hasMemo) "あり" else "なし",
         summaryCell,
-        driveUrl.orEmpty(),
         DateUtils.formatDateTime(System.currentTimeMillis()),
     )
 
     companion object {
         private const val MAX_SUMMARY_CELL_CHARS = 500
 
-        /** CSV/シートの列見出し。buildRow の並びと必ず一致させること。 */
+        /** 端末内CSVのファイル名（拡張子なし）。共有/書き出し時のファイル名にもなる。 */
+        const val CSV_NAME = "活動履歴"
+
+        /** CSVの列見出し。buildRow の並びと必ず一致させること。 */
         val COLUMNS = listOf(
             "日付", "担当者", "営業開始", "営業終了", "訪問先", "チェックイン", "チェックアウト",
-            "滞在(分)", "住所", "録音メモ有無", "AI要約", "Drive日報URL", "作成日時",
+            "滞在(分)", "住所", "録音メモ有無", "AI要約", "作成日時",
         )
     }
 }

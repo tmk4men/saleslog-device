@@ -80,29 +80,8 @@ fun SettingsScreen(
                 singleLine = true,
                 modifier = Modifier.fillMaxWidth(),
             )
-            OutlinedTextField(
-                value = state.driveFolderId,
-                onValueChange = viewModel::onDriveFolder,
-                label = { Text("Google Drive保存先フォルダID") },
-                singleLine = true,
-                modifier = Modifier.fillMaxWidth(),
-            )
-            OutlinedTextField(
-                value = state.spreadsheetId,
-                onValueChange = viewModel::onSpreadsheet,
-                label = { Text("Google SheetsスプレッドシートID") },
-                singleLine = true,
-                modifier = Modifier.fillMaxWidth(),
-            )
-            OutlinedTextField(
-                value = state.sheetName,
-                onValueChange = viewModel::onSheetName,
-                label = { Text("Sheetsシート名") },
-                singleLine = true,
-                modifier = Modifier.fillMaxWidth(),
-            )
             Text(
-                text = "位置情報は営業中だけ訪問ログを残すために使われます。",
+                text = "位置情報は営業中だけ訪問ログを残すために使われます。活動履歴は端末内に保存され、日報画面からCSVを書き出せます。",
                 fontSize = 12.sp,
             )
             Button(onClick = viewModel::save, modifier = Modifier.fillMaxWidth()) {

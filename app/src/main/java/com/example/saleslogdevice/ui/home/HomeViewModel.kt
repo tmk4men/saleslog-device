@@ -111,19 +111,16 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     /**
-     * 営業終了 → 日報生成 → Drive 保存 → Sheets 追記 → 日報画面へ自動遷移、までを1アクションで完了する。
-     * Drive/Sheets はMVPではMockのため必ず成功する想定だが、失敗時もローカルには日報が残るので
-     * メッセージで結果を伝える。
+     * 営業終了 → 日報生成 → 活動履歴を端末内CSVに追記 → 日報画面へ自動遷移、までを1アクションで完了する。
+     * 日報はDBから常に再生成できるので、CSV追記が失敗しても結果は閲覧できる。
      */
     fun finishWork() = viewModelScope.launch {
         _state.update { it.copy(loading = true) }
         val location = locator.locationProvider.getCurrent()
         when (val result = locator.finalizeDay(location)) {
             is FinalizeDayUseCase.Result.Success -> {
-                val msg = when {
-                    result.driveSuccess -> "営業終了で日報を作成しました"
-                    else -> "営業を終了し、日報は端末内に保存されました"
-                }
+                val msg = if (result.csvSuccess) "営業を終了し、日報を作成しました"
+                    else "営業を終了しました（日報は日報画面で確認できます）"
                 _state.update {
                     it.copy(loading = false, message = msg, navigateTo = Routes.REPORT)
                 }

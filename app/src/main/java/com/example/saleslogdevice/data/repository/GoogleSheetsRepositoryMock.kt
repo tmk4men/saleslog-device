@@ -16,7 +16,10 @@ class GoogleSheetsRepositoryMock(private val context: Context) : GoogleSheetsRep
     /** 蓄積先CSVファイル。存在しなくてもパスを返す（共有判定は呼び出し側で exists() する）。 */
     fun fileFor(spreadsheetId: String, sheetName: String): File {
         val dir = File(context.filesDir, "sheets")
-        return File(dir, "${spreadsheetId.ifBlank { "local" }}_${sheetName.ifBlank { "sheet" }}.csv")
+        val name = sheetName.ifBlank { "活動履歴" }
+        // spreadsheetId が無い（端末内CSV運用）ならシート名だけのきれいなファイル名にする。
+        val fileName = if (spreadsheetId.isBlank()) "$name.csv" else "${spreadsheetId}_$name.csv"
+        return File(dir, fileName)
     }
 
     override suspend fun appendRows(

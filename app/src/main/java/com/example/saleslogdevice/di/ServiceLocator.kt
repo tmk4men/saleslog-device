@@ -5,8 +5,6 @@ import com.example.saleslogdevice.data.ai.OnDeviceSummarizer
 import com.example.saleslogdevice.data.local.AppDatabase
 import com.example.saleslogdevice.data.local.Transactor
 import com.example.saleslogdevice.domain.ai.Summarizer
-import com.example.saleslogdevice.data.repository.GoogleDriveRepository
-import com.example.saleslogdevice.data.repository.GoogleDriveRepositoryMock
 import com.example.saleslogdevice.data.repository.GoogleSheetsRepository
 import com.example.saleslogdevice.data.repository.GoogleSheetsRepositoryMock
 import com.example.saleslogdevice.data.repository.AudioRecordingRepository
@@ -24,7 +22,6 @@ import com.example.saleslogdevice.domain.usecase.GenerateDailyReportUseCase
 import com.example.saleslogdevice.domain.usecase.ReceiveAudioUseCase
 import com.example.saleslogdevice.domain.usecase.ReceiveRecorderTextUseCase
 import com.example.saleslogdevice.domain.usecase.StartWorkSessionUseCase
-import com.example.saleslogdevice.domain.usecase.SyncReportToDriveUseCase
 import com.example.saleslogdevice.service.AudioFileStore
 import com.example.saleslogdevice.service.LocationProvider
 import kotlinx.coroutines.CoroutineScope
@@ -52,15 +49,12 @@ class ServiceLocator(appContext: Context) {
 
     val audioFileStore = AudioFileStore(appContext)
 
-    val driveRepo: GoogleDriveRepository = GoogleDriveRepositoryMock(appContext)
     private val sheetsRepoImpl = GoogleSheetsRepositoryMock(appContext)
     val sheetsRepo: GoogleSheetsRepository = sheetsRepoImpl
 
     /** 蓄積済み活動CSVファイル。まだ1件も記録が無ければ null。共有/書き出し用。 */
-    suspend fun activityCsvFile(): java.io.File? {
-        val s = userSettings.get()
-        return sheetsRepoImpl.fileFor(s.spreadsheetId, s.sheetName).takeIf { it.exists() }
-    }
+    fun activityCsvFile(): java.io.File? =
+        sheetsRepoImpl.fileFor("", AppendActivityToSheetsUseCase.CSV_NAME).takeIf { it.exists() }
 
     /**
      * 端末内要約。Gemini Nano 対応端末なら primary を差し込む（現状は未配線でヒューリスティックにフォールバック）。
@@ -77,11 +71,10 @@ class ServiceLocator(appContext: Context) {
     val receiveRecorderText = ReceiveRecorderTextUseCase(workSessions, visitLogs, recorderTexts, transactor, summarizer)
     val receiveAudio = ReceiveAudioUseCase(workSessions, visitLogs, audioRecordings, audioFileStore, transactor)
     val generateDailyReport = GenerateDailyReportUseCase(workSessions, visitLogs, recorderTexts)
-    val syncReportToDrive = SyncReportToDriveUseCase(driveRepo, workSessions, userSettings, syncLogs)
     val appendActivityToSheets = AppendActivityToSheetsUseCase(
-        sheetsRepo, workSessions, visitLogs, recorderTexts, userSettings, syncLogs,
+        sheetsRepo, workSessions, visitLogs, recorderTexts, syncLogs,
     )
-    val finalizeDay = FinalizeDayUseCase(endWorkSession, generateDailyReport, syncReportToDrive, appendActivityToSheets)
+    val finalizeDay = FinalizeDayUseCase(endWorkSession, generateDailyReport, appendActivityToSheets)
 
     companion object {
         @Volatile private var instance: ServiceLocator? = null

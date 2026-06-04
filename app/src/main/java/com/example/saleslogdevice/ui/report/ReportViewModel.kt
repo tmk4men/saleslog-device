@@ -18,6 +18,8 @@ data class ReportUiState(
     val syncingDrive: Boolean = false,
     val syncingSheets: Boolean = false,
     val message: String? = null,
+    /** 共有すべきCSVの絶対パス。画面側が共有Intentを起動したら consumeShare() でクリアする。 */
+    val csvSharePath: String? = null,
 )
 
 class ReportViewModel(application: Application) : AndroidViewModel(application) {
@@ -49,6 +51,18 @@ class ReportViewModel(application: Application) : AndroidViewModel(application) 
 
     fun consumeMessage() = _state.update { it.copy(message = null) }
 
+    fun consumeShare() = _state.update { it.copy(csvSharePath = null) }
+
+    /** 蓄積済み活動CSVを共有する。記録がまだ無ければメッセージのみ。 */
+    fun shareCsv() = viewModelScope.launch {
+        val file = locator.activityCsvFile()
+        if (file == null) {
+            _state.update { it.copy(message = "まだ記録されたCSVがありません。先に「CSVに記録」してください。") }
+        } else {
+            _state.update { it.copy(csvSharePath = file.absolutePath) }
+        }
+    }
+
     fun saveToDrive() = viewModelScope.launch {
         val sessionId = _state.value.sessionId ?: return@launch
         _state.update { it.copy(syncingDrive = true) }
@@ -70,8 +84,8 @@ class ReportViewModel(application: Application) : AndroidViewModel(application) 
         _state.update {
             it.copy(
                 syncingSheets = false,
-                message = if (result.isSuccess) "Sheetsに追記しました（Mock）"
-                    else "Sheetsへの追記に失敗しました。あとで再送できます。",
+                message = if (result.isSuccess) "CSVに記録しました"
+                    else "CSVへの記録に失敗しました。あとで再実行できます。",
             )
         }
     }

@@ -46,7 +46,7 @@ class AppendActivityToSheetsUseCase(
             }
         }
 
-        val result = sheets.appendRows(s.spreadsheetId, s.sheetName, rows)
+        val result = sheets.appendRows(s.spreadsheetId, s.sheetName, COLUMNS, rows)
         return result.fold(
             onSuccess = {
                 sessions.update(session.copy(syncedToSheets = true))
@@ -99,5 +99,11 @@ class AppendActivityToSheetsUseCase(
 
     companion object {
         private const val MAX_SUMMARY_CELL_CHARS = 500
+
+        /** CSV/シートの列見出し。buildRow の並びと必ず一致させること。 */
+        val COLUMNS = listOf(
+            "日付", "担当者", "営業開始", "営業終了", "訪問先", "チェックイン", "チェックアウト",
+            "滞在(分)", "住所", "録音メモ有無", "AI要約", "Drive日報URL", "作成日時",
+        )
     }
 }

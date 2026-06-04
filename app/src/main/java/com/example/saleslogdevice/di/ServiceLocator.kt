@@ -47,7 +47,14 @@ class ServiceLocator(appContext: Context) {
     val syncLogs = SyncLogRepository(db.syncLogDao())
 
     val driveRepo: GoogleDriveRepository = GoogleDriveRepositoryMock(appContext)
-    val sheetsRepo: GoogleSheetsRepository = GoogleSheetsRepositoryMock(appContext)
+    private val sheetsRepoImpl = GoogleSheetsRepositoryMock(appContext)
+    val sheetsRepo: GoogleSheetsRepository = sheetsRepoImpl
+
+    /** 蓄積済み活動CSVファイル。まだ1件も記録が無ければ null。共有/書き出し用。 */
+    suspend fun activityCsvFile(): java.io.File? {
+        val s = userSettings.get()
+        return sheetsRepoImpl.fileFor(s.spreadsheetId, s.sheetName).takeIf { it.exists() }
+    }
 
     /**
      * 端末内要約。Gemini Nano 対応端末なら primary を差し込む（現状は未配線でヒューリスティックにフォールバック）。

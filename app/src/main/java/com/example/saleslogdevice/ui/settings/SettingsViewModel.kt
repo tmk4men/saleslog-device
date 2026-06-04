@@ -85,12 +85,13 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
         val result = locator.sheetsRepo.appendRows(
             spreadsheetId = s.spreadsheetId,
             sheetName = s.sheetName,
+            header = emptyList(),
             rows = listOf(listOf("テスト", s.userName, "OK")),
         )
         _state.update {
             it.copy(message = result.fold(
-                onSuccess = { "Sheetsテスト追記OK" },
-                onFailure = { ex -> "Sheetsテスト追記失敗: ${ex.message}" },
+                onSuccess = { "CSVテスト記録OK" },
+                onFailure = { ex -> "CSVテスト記録失敗: ${ex.message}" },
             ))
         }
     }

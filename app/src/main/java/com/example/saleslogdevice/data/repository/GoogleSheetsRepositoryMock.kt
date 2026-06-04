@@ -7,24 +7,40 @@ import kotlinx.coroutines.withContext
 import java.io.File
 
 /**
- * 追記内容をCSVとしてアプリ内ストレージに残すMock。
+ * 活動履歴をCSVとしてアプリ内ストレージに蓄積する実装。
  * 内部ファイル: <filesDir>/sheets/<spreadsheetId>_<sheetName>.csv
+ * 新規作成時のみ先頭にヘッダー行を書き込む。共有/書き出しは [fileFor] のファイルを使う。
  */
 class GoogleSheetsRepositoryMock(private val context: Context) : GoogleSheetsRepository {
+
+    /** 蓄積先CSVファイル。存在しなくてもパスを返す（共有判定は呼び出し側で exists() する）。 */
+    fun fileFor(spreadsheetId: String, sheetName: String): File {
+        val dir = File(context.filesDir, "sheets")
+        return File(dir, "${spreadsheetId.ifBlank { "local" }}_${sheetName.ifBlank { "sheet" }}.csv")
+    }
 
     override suspend fun appendRows(
         spreadsheetId: String,
         sheetName: String,
+        header: List<String>,
         rows: List<List<String>>,
     ): Result<Unit> = withContext(Dispatchers.IO) {
         runCatching {
-            val dir = File(context.filesDir, "sheets").apply { mkdirs() }
-            val file = File(dir, "${spreadsheetId.ifBlank { "local" }}_${sheetName.ifBlank { "sheet" }}.csv")
-            file.appendText(rows.joinToString("\n") { row -> row.joinToString(",") { escapeCsv(it) } } + "\n")
-            Log.i(TAG, "Mock Sheets appended ${rows.size} row(s) to ${file.absolutePath}")
+            val file = fileFor(spreadsheetId, sheetName)
+            file.parentFile?.mkdirs()
+            val sb = StringBuilder()
+            if ((!file.exists() || file.length() == 0L) && header.isNotEmpty()) {
+                sb.append(toCsvLine(header)).append("\n")
+            }
+            rows.forEach { row -> sb.append(toCsvLine(row)).append("\n") }
+            file.appendText(sb.toString())
+            Log.i(TAG, "CSV appended ${rows.size} row(s) to ${file.absolutePath}")
             Unit
         }
     }
+
+    private fun toCsvLine(values: List<String>): String =
+        values.joinToString(",") { escapeCsv(it) }
 
     private fun escapeCsv(value: String): String {
         val needsQuote = value.contains(',') || value.contains('"') || value.contains('\n')

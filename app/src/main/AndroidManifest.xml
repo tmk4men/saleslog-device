@@ -38,6 +38,17 @@
             </intent-filter>
         </activity>
 
+        <!-- CSVを他アプリ（Drive/メール等）へ共有するための FileProvider。 -->
+        <provider
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="${applicationId}.fileprovider"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/file_paths" />
+        </provider>
+
         <!-- AppWidgetManager から呼ばれるため exported=true。
              ただし APPWIDGET_UPDATE 以外は受けない（独自actionは内部Receiverで処理）。 -->
         <receiver

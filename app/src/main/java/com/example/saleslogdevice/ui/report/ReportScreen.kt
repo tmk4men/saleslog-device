@@ -1,5 +1,6 @@
 package com.example.saleslogdevice.ui.report
 
+import android.content.Intent
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -26,11 +27,14 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.core.content.FileProvider
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import java.io.File
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -40,12 +44,28 @@ fun ReportScreen(
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     val snackbar = remember { SnackbarHostState() }
+    val context = LocalContext.current
 
     LaunchedEffect(state.message) {
         state.message?.let {
             snackbar.showSnackbar(it)
             viewModel.consumeMessage()
         }
+    }
+
+    LaunchedEffect(state.csvSharePath) {
+        val path = state.csvSharePath ?: return@LaunchedEffect
+        val uri = FileProvider.getUriForFile(
+            context, "${context.packageName}.fileprovider", File(path),
+        )
+        val send = Intent(Intent.ACTION_SEND).apply {
+            type = "text/csv"
+            putExtra(Intent.EXTRA_STREAM, uri)
+            putExtra(Intent.EXTRA_SUBJECT, "営業活動履歴CSV")
+            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+        }
+        context.startActivity(Intent.createChooser(send, "CSVを共有"))
+        viewModel.consumeShare()
     }
 
     Scaffold(
@@ -78,8 +98,12 @@ fun ReportScreen(
                     onClick = viewModel::appendToSheets,
                     enabled = !state.syncingSheets && state.sessionId != null,
                     modifier = Modifier.weight(1f),
-                ) { Text("Sheets追記") }
+                ) { Text("CSVに記録") }
             }
+            OutlinedButton(
+                onClick = viewModel::shareCsv,
+                modifier = Modifier.fillMaxWidth(),
+            ) { Text("CSVを共有 / 書き出し") }
             if (state.driveUrl != null) {
                 Text("Drive: ${state.driveUrl}", fontSize = 12.sp, color = MaterialTheme.colorScheme.primary)
             }

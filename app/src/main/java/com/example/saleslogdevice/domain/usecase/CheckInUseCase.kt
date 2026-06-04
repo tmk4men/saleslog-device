@@ -39,6 +39,7 @@ class CheckInUseCase(
             checkInTime = now,
             checkInLatitude = location?.latitude,
             checkInLongitude = location?.longitude,
+            checkInAddress = location?.address,
         )
         val id = visits.insert(entity)
         CheckInResult.Success(entity.copy(id = id))

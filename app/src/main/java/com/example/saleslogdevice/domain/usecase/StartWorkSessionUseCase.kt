@@ -37,6 +37,7 @@ class StartWorkSessionUseCase(
             startTime = now,
             startLatitude = location?.latitude,
             startLongitude = location?.longitude,
+            startAddress = location?.address,
         )
 
         if (existing == null) {

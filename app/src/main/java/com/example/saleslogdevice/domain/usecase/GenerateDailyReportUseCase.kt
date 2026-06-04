@@ -69,9 +69,11 @@ class GenerateDailyReportUseCase(
                 val checkOut = v.checkOutTime?.let(DateUtils::formatTime) ?: "-"
                 appendLine("時間: $checkIn - $checkOut")
                 if (v.durationMinutes != null) appendLine("滞在: ${DateUtils.humanDuration(v.durationMinutes)}")
-                if (v.checkInLatitude != null && v.checkInLongitude != null) {
-                    appendLine("位置: ${"%.5f".format(v.checkInLatitude)}, ${"%.5f".format(v.checkInLongitude)}")
-                }
+                val place = v.checkInAddress?.takeIf(String::isNotBlank)
+                    ?: if (v.checkInLatitude != null && v.checkInLongitude != null)
+                        "${"%.5f".format(v.checkInLatitude)}, ${"%.5f".format(v.checkInLongitude)}"
+                    else null
+                if (place != null) appendLine("位置: $place")
                 if (v.memo.isNotBlank()) {
                     appendLine()
                     appendLine("メモ: ${v.memo}")

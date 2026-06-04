@@ -1,5 +1,8 @@
 package com.example.saleslogdevice.ui.home
 
+import android.content.Context
+import android.content.Intent
+import android.net.Uri
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -36,6 +39,7 @@ import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
@@ -52,6 +56,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -69,6 +74,7 @@ fun HomeScreen(
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     val snackbar = remember { SnackbarHostState() }
+    val context = LocalContext.current
 
     LaunchedEffect(state.message) {
         state.message?.let {
@@ -130,6 +136,7 @@ fun HomeScreen(
                     else -> onReport()
                 }
             },
+            onOpenRecorder = { openRecorder(context) },
             onReportPreview = onReport,
         )
     }
@@ -146,6 +153,7 @@ private fun Content(
     loading: Boolean,
     onPrimary: () -> Unit,
     onSecondary: () -> Unit,
+    onOpenRecorder: () -> Unit,
     onReportPreview: () -> Unit,
 ) {
     Column(
@@ -182,6 +190,20 @@ private fun Content(
         }
 
         PrimaryAction(appState = appState, loading = loading, onClick = onPrimary)
+
+        if (appState == AppState.WORKING || appState == AppState.VISITING) {
+            OutlinedButton(
+                onClick = onOpenRecorder,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .heightIn(min = 52.dp),
+                shape = MaterialTheme.shapes.medium,
+            ) {
+                Icon(Icons.Filled.Mic, contentDescription = null, modifier = Modifier.size(20.dp))
+                Spacer(Modifier.size(8.dp))
+                Text("レコーダーで録音", style = MaterialTheme.typography.titleMedium)
+            }
+        }
 
         secondaryLabel(appState)?.let { label ->
             FilledTonalButton(
@@ -469,4 +491,25 @@ private fun secondaryLabel(state: AppState): String? = when (state) {
     AppState.WORKING -> "営業終了"
     AppState.VISITING -> null // チェックアウトしてからでないと終了不可
     else -> null
+}
+
+private const val RECORDER_PACKAGE = "com.google.android.apps.recorder"
+
+/**
+ * Google レコーダーをワンタップで起動する。録音の自動開始は OS 側に窓口が無いため不可で、
+ * ここでは「アプリを開く」ところまで（録音ボタンはユーザーが押す）。
+ * 未インストール時は Play ストアのレコーダーページへ誘導する。
+ */
+private fun openRecorder(context: Context) {
+    context.packageManager.getLaunchIntentForPackage(RECORDER_PACKAGE)?.let {
+        context.startActivity(it)
+        return
+    }
+    val market = Intent(Intent.ACTION_VIEW, Uri.parse("market://details?id=$RECORDER_PACKAGE"))
+    val web = Intent(
+        Intent.ACTION_VIEW,
+        Uri.parse("https://play.google.com/store/apps/details?id=$RECORDER_PACKAGE"),
+    )
+    runCatching { context.startActivity(market) }
+        .recoverCatching { context.startActivity(web) }
 }

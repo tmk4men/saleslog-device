@@ -24,7 +24,12 @@ class ReceiveRecorderTextUseCase(
     private val transactor: Transactor,
     private val summarizer: Summarizer,
 ) {
-    suspend operator fun invoke(title: String?, rawText: String): ReceiveResult {
+    /**
+     * @param visitLogId 紐づけ先の訪問。明示指定が無い(null)場合は未紐づけ商談メモとして保存する。
+     *   画面側で「どの訪問に紐づけるか」をユーザーに選ばせ、その id を渡す想定。
+     *   チェックアウト後でも、今日のセッションの訪問なら紐づけられる。
+     */
+    suspend operator fun invoke(title: String?, rawText: String, visitLogId: Long? = null): ReceiveResult {
         val cleaned = rawText.trim()
         if (cleaned.isEmpty()) return ReceiveResult.EmptyText
 
@@ -36,11 +41,14 @@ class ReceiveRecorderTextUseCase(
         return transactor.run {
             val session = sessions.getActiveWorking() ?: return@run ReceiveResult.NoActiveSession
             val formatted = TextFormatter.formatMinutes(cleaned)
-            val active = visits.getActive(session.id)
+            // 指定された訪問が今日のセッションのものか検証してから紐づける。不正/未指定なら未紐づけ。
+            val targetVisit = visitLogId
+                ?.let { visits.getById(it) }
+                ?.takeIf { it.workSessionId == session.id }
 
             val base = RecorderTextEntity(
                 workSessionId = session.id,
-                visitLogId = active?.id,
+                visitLogId = targetVisit?.id,
                 title = title,
                 rawText = cleaned,
                 formattedMinutes = formatted,
@@ -49,9 +57,9 @@ class ReceiveRecorderTextUseCase(
             val id = recorders.insert(base)
             val saved = base.copy(id = id)
 
-            if (active != null) {
-                visits.update(active.copy(recorderTextId = id))
-                ReceiveResult.LinkedToVisit(saved, active.id)
+            if (targetVisit != null) {
+                visits.update(targetVisit.copy(recorderTextId = id))
+                ReceiveResult.LinkedToVisit(saved, targetVisit.id)
             } else {
                 ReceiveResult.StoredUnlinked(saved)
             }

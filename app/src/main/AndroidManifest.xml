@@ -6,6 +6,11 @@
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 
+    <!-- Android 11+ のパッケージ可視性。Google レコーダーを起動できるよう明示する。 -->
+    <queries>
+        <package android:name="com.google.android.apps.recorder" />
+    </queries>
+
     <application
         android:name=".SalesLogApplication"
         android:allowBackup="true"

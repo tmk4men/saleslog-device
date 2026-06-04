@@ -64,35 +64,4 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
         )
         _state.update { it.copy(message = "設定を保存しました") }
     }
-
-    fun testDrive() = viewModelScope.launch {
-        val s = state.value
-        val result = locator.driveRepo.saveReport(
-            folderId = s.driveFolderId,
-            fileName = "test_${System.currentTimeMillis()}.md",
-            markdown = "# テスト保存\nこれはMock Driveのテストです。",
-        )
-        _state.update {
-            it.copy(message = result.fold(
-                onSuccess = { url -> "Driveテスト保存OK: $url" },
-                onFailure = { ex -> "Driveテスト保存失敗: ${ex.message}" },
-            ))
-        }
-    }
-
-    fun testSheets() = viewModelScope.launch {
-        val s = state.value
-        val result = locator.sheetsRepo.appendRows(
-            spreadsheetId = s.spreadsheetId,
-            sheetName = s.sheetName,
-            header = emptyList(),
-            rows = listOf(listOf("テスト", s.userName, "OK")),
-        )
-        _state.update {
-            it.copy(message = result.fold(
-                onSuccess = { "CSVテスト記録OK" },
-                onFailure = { ex -> "CSVテスト記録失敗: ${ex.message}" },
-            ))
-        }
-    }
 }

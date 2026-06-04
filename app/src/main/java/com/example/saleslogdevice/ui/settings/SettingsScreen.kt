@@ -2,7 +2,6 @@ package com.example.saleslogdevice.ui.settings
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -14,7 +13,6 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
@@ -109,14 +107,6 @@ fun SettingsScreen(
             )
             Button(onClick = viewModel::save, modifier = Modifier.fillMaxWidth()) {
                 Text("保存")
-            }
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
-                OutlinedButton(onClick = viewModel::testDrive, modifier = Modifier.weight(1f)) {
-                    Text("テスト保存(Drive)")
-                }
-                OutlinedButton(onClick = viewModel::testSheets, modifier = Modifier.weight(1f)) {
-                    Text("テスト追記(Sheets)")
-                }
             }
         }
     }

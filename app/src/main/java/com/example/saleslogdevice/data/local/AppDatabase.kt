@@ -5,11 +5,13 @@ import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
 import androidx.room.TypeConverters
+import com.example.saleslogdevice.data.local.dao.AudioRecordingDao
 import com.example.saleslogdevice.data.local.dao.RecorderTextDao
 import com.example.saleslogdevice.data.local.dao.SyncLogDao
 import com.example.saleslogdevice.data.local.dao.UserSettingsDao
 import com.example.saleslogdevice.data.local.dao.VisitLogDao
 import com.example.saleslogdevice.data.local.dao.WorkSessionDao
+import com.example.saleslogdevice.data.local.entity.AudioRecordingEntity
 import com.example.saleslogdevice.data.local.entity.RecorderTextEntity
 import com.example.saleslogdevice.data.local.entity.SyncLogEntity
 import com.example.saleslogdevice.data.local.entity.UserSettingsEntity
@@ -23,8 +25,9 @@ import com.example.saleslogdevice.data.local.entity.WorkSessionEntity
         VisitLogEntity::class,
         RecorderTextEntity::class,
         SyncLogEntity::class,
+        AudioRecordingEntity::class,
     ],
-    version = 4,
+    version = 5,
     exportSchema = false,
 )
 @TypeConverters(Converters::class)
@@ -34,6 +37,7 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun visitLogDao(): VisitLogDao
     abstract fun recorderTextDao(): RecorderTextDao
     abstract fun syncLogDao(): SyncLogDao
+    abstract fun audioRecordingDao(): AudioRecordingDao
 
     companion object {
         @Volatile private var instance: AppDatabase? = null

@@ -10,6 +10,9 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
+/** 日報画面に表示する録音1件。再生は path を FileProvider 経由で開く。 */
+data class RecordingItem(val id: Long, val label: String, val path: String)
+
 data class ReportUiState(
     val loading: Boolean = true,
     val markdown: String = "",
@@ -20,6 +23,8 @@ data class ReportUiState(
     val message: String? = null,
     /** 共有すべきCSVの絶対パス。画面側が共有Intentを起動したら consumeShare() でクリアする。 */
     val csvSharePath: String? = null,
+    /** このセッションに紐づく録音一覧。 */
+    val recordings: List<RecordingItem> = emptyList(),
 )
 
 class ReportViewModel(application: Application) : AndroidViewModel(application) {
@@ -39,11 +44,22 @@ class ReportViewModel(application: Application) : AndroidViewModel(application) 
         if (report == null) {
             _state.update { it.copy(loading = false, markdown = "（本日の日報はまだありません）") }
         } else {
+            val visitNames = report.visits.associate { it.id to it.clientName }
+            val recordings = locator.audioRecordings.getBySession(report.session.id).map { rec ->
+                val visitName = rec.visitLogId?.let { visitNames[it] }
+                val base = rec.title?.takeIf { it.isNotBlank() } ?: "録音"
+                RecordingItem(
+                    id = rec.id,
+                    label = if (visitName != null) "$base（$visitName）" else base,
+                    path = rec.filePath,
+                )
+            }
             _state.update {
                 it.copy(
                     loading = false,
                     markdown = report.markdown,
                     sessionId = report.session.id,
+                    recordings = recordings,
                 )
             }
         }

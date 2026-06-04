@@ -1,5 +1,6 @@
 package com.example.saleslogdevice.ui.share
 
+import android.net.Uri
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -40,6 +41,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 fun ShareReceiveScreen(
     incomingTitle: String?,
     incomingText: String,
+    incomingAudioUri: Uri?,
     onClose: () -> Unit,
     viewModel: ShareReceiveViewModel = viewModel(),
 ) {
@@ -48,6 +50,9 @@ fun ShareReceiveScreen(
 
     LaunchedEffect(incomingText) {
         if (incomingText.isNotBlank()) viewModel.setIncoming(incomingTitle, incomingText)
+    }
+    LaunchedEffect(incomingAudioUri) {
+        incomingAudioUri?.let { viewModel.setIncomingAudio(incomingTitle, it) }
     }
 
     LaunchedEffect(state.finished) { if (state.finished) onClose() }
@@ -59,7 +64,7 @@ fun ShareReceiveScreen(
     }
 
     Scaffold(
-        topBar = { TopAppBar(title = { Text("商談メモを取り込み") }) },
+        topBar = { TopAppBar(title = { Text(if (state.isAudio) "録音を取り込み" else "商談メモを取り込み") }) },
         snackbarHost = { SnackbarHost(snackbar) },
     ) { padding ->
         Column(
@@ -111,7 +116,7 @@ fun ShareReceiveScreen(
             }
             Button(
                 onClick = viewModel::confirm,
-                enabled = !state.submitting && state.previewText.isNotBlank(),
+                enabled = !state.submitting && state.canSubmit,
                 modifier = Modifier
                     .fillMaxWidth()
                     .heightIn(min = 72.dp),
@@ -123,9 +128,9 @@ fun ShareReceiveScreen(
                         strokeWidth = 3.dp,
                     )
                     Spacer(Modifier.size(12.dp))
-                    Text("要約中…", fontSize = 20.sp, fontWeight = FontWeight.Bold)
+                    Text(if (state.isAudio) "取り込み中…" else "要約中…", fontSize = 20.sp, fontWeight = FontWeight.Bold)
                 } else {
-                    Text("この内容で取り込む", fontSize = 20.sp, fontWeight = FontWeight.Bold)
+                    Text(if (state.isAudio) "この録音を取り込む" else "この内容で取り込む", fontSize = 20.sp, fontWeight = FontWeight.Bold)
                 }
             }
         }

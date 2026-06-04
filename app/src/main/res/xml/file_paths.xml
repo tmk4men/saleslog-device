@@ -2,4 +2,6 @@
 <paths>
     <!-- GoogleSheetsRepositoryMock が CSV を書き出す <filesDir>/sheets/ を共有可能にする。 -->
     <files-path name="sheets" path="sheets/" />
+    <!-- 取り込んだ音声 <filesDir>/recordings/ を再生(外部プレーヤー)で開けるようにする。 -->
+    <files-path name="recordings" path="recordings/" />
 </paths>

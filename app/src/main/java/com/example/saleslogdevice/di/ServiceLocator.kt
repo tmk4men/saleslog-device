@@ -9,6 +9,7 @@ import com.example.saleslogdevice.data.repository.GoogleDriveRepository
 import com.example.saleslogdevice.data.repository.GoogleDriveRepositoryMock
 import com.example.saleslogdevice.data.repository.GoogleSheetsRepository
 import com.example.saleslogdevice.data.repository.GoogleSheetsRepositoryMock
+import com.example.saleslogdevice.data.repository.AudioRecordingRepository
 import com.example.saleslogdevice.data.repository.RecorderTextRepository
 import com.example.saleslogdevice.data.repository.SyncLogRepository
 import com.example.saleslogdevice.data.repository.UserSettingsRepository
@@ -20,9 +21,11 @@ import com.example.saleslogdevice.domain.usecase.CheckOutUseCase
 import com.example.saleslogdevice.domain.usecase.EndWorkSessionUseCase
 import com.example.saleslogdevice.domain.usecase.FinalizeDayUseCase
 import com.example.saleslogdevice.domain.usecase.GenerateDailyReportUseCase
+import com.example.saleslogdevice.domain.usecase.ReceiveAudioUseCase
 import com.example.saleslogdevice.domain.usecase.ReceiveRecorderTextUseCase
 import com.example.saleslogdevice.domain.usecase.StartWorkSessionUseCase
 import com.example.saleslogdevice.domain.usecase.SyncReportToDriveUseCase
+import com.example.saleslogdevice.service.AudioFileStore
 import com.example.saleslogdevice.service.LocationProvider
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -45,6 +48,9 @@ class ServiceLocator(appContext: Context) {
     val visitLogs = VisitLogRepository(db.visitLogDao())
     val recorderTexts = RecorderTextRepository(db.recorderTextDao())
     val syncLogs = SyncLogRepository(db.syncLogDao())
+    val audioRecordings = AudioRecordingRepository(db.audioRecordingDao())
+
+    val audioFileStore = AudioFileStore(appContext)
 
     val driveRepo: GoogleDriveRepository = GoogleDriveRepositoryMock(appContext)
     private val sheetsRepoImpl = GoogleSheetsRepositoryMock(appContext)
@@ -69,6 +75,7 @@ class ServiceLocator(appContext: Context) {
     val checkIn = CheckInUseCase(workSessions, visitLogs, transactor)
     val checkOut = CheckOutUseCase(workSessions, visitLogs)
     val receiveRecorderText = ReceiveRecorderTextUseCase(workSessions, visitLogs, recorderTexts, transactor, summarizer)
+    val receiveAudio = ReceiveAudioUseCase(workSessions, visitLogs, audioRecordings, audioFileStore, transactor)
     val generateDailyReport = GenerateDailyReportUseCase(workSessions, visitLogs, recorderTexts)
     val syncReportToDrive = SyncReportToDriveUseCase(driveRepo, workSessions, userSettings, syncLogs)
     val appendActivityToSheets = AppendActivityToSheetsUseCase(

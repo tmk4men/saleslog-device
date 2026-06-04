@@ -60,6 +60,9 @@ class MainActivity : ComponentActivity() {
         ShareIntentHandler.extract(intent)?.let {
             return IntentPayload.Share(title = it.title, text = it.text)
         }
+        ShareIntentHandler.extractAudio(intent)?.let {
+            return IntentPayload.ShareAudio(title = it.title, uri = it.uri)
+        }
         val route = intent.getStringExtra(EXTRA_ROUTE)
         if (!route.isNullOrBlank()) return IntentPayload.NavigateTo(route)
         return IntentPayload.None

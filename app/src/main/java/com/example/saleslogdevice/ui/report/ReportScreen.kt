@@ -26,9 +26,11 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.content.FileProvider
@@ -106,6 +108,28 @@ fun ReportScreen(
             ) { Text("CSVを共有 / 書き出し") }
             if (state.driveUrl != null) {
                 Text("Drive: ${state.driveUrl}", fontSize = 12.sp, color = MaterialTheme.colorScheme.primary)
+            }
+            if (state.recordings.isNotEmpty()) {
+                Text("録音 (${state.recordings.size}件)", fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
+                state.recordings.forEach { rec ->
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Text(rec.label, modifier = Modifier.weight(1f), fontSize = 13.sp)
+                        OutlinedButton(onClick = {
+                            val uri = FileProvider.getUriForFile(
+                                context, "${context.packageName}.fileprovider", File(rec.path),
+                            )
+                            val view = Intent(Intent.ACTION_VIEW).apply {
+                                setDataAndType(uri, "audio/*")
+                                addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                            }
+                            context.startActivity(Intent.createChooser(view, "再生"))
+                        }) { Text("▶ 再生") }
+                    }
+                }
             }
             Text(
                 text = state.markdown,

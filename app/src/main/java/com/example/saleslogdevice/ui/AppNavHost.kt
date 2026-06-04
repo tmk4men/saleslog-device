@@ -1,5 +1,6 @@
 package com.example.saleslogdevice.ui
 
+import android.net.Uri
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -20,10 +21,16 @@ import com.example.saleslogdevice.ui.share.ShareReceiveScreen
 sealed class IntentPayload {
     data object None : IntentPayload()
     data class Share(val title: String?, val text: String) : IntentPayload()
+    data class ShareAudio(val title: String?, val uri: Uri) : IntentPayload()
     data class NavigateTo(val route: String) : IntentPayload()
 }
 
-data class IncomingShare(val title: String?, val text: String)
+/** text 取り込みなら [text]、音声取り込みなら [audioUri] が入る（排他）。 */
+data class IncomingShare(
+    val title: String?,
+    val text: String,
+    val audioUri: Uri? = null,
+)
 
 /** 外部Intentで指定可能なrouteのallowlist。 */
 private val ALLOWED_NAVIGATE_ROUTES = setOf(
@@ -45,6 +52,13 @@ fun AppNavHost(
         when (payload) {
             is IntentPayload.Share -> {
                 currentShare = IncomingShare(payload.title, payload.text)
+                nav.navigate(Routes.SHARE) {
+                    launchSingleTop = true
+                }
+                onPayloadConsumed()
+            }
+            is IntentPayload.ShareAudio -> {
+                currentShare = IncomingShare(payload.title, text = "", audioUri = payload.uri)
                 nav.navigate(Routes.SHARE) {
                     launchSingleTop = true
                 }
@@ -82,6 +96,7 @@ fun AppNavHost(
             ShareReceiveScreen(
                 incomingTitle = currentShare?.title,
                 incomingText = currentShare?.text.orEmpty(),
+                incomingAudioUri = currentShare?.audioUri,
                 onClose = {
                     currentShare = null
                     if (!nav.popBackStack()) {

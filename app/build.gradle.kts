@@ -13,8 +13,8 @@ android {
         applicationId = "app.saleslog"
         minSdk = 29
         targetSdk = 35
-        versionCode = 5
-        versionName = "0.1.3"
+        versionCode = 6
+        versionName = "0.1.4"
     }
 
     buildTypes {
@@ -58,6 +58,14 @@ dependencies {
     ksp("androidx.room:room-compiler:$roomVersion")
 
     implementation("com.google.android.gms:play-services-location:21.3.0")
+
+    // play-services が推移的に引き込む古い androidx.fragment 1.1.0 を新しい版に強制上書きする
+    // (Google Play Console の「SDKバージョンが古い」警告対策)
+    constraints {
+        implementation("androidx.fragment:fragment:1.8.5") {
+            because("play-services 経由の fragment 1.1.0 が古いと Play Console に警告されるため")
+        }
+    }
 
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.8.1")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-play-services:1.8.1")

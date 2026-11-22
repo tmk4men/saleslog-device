@@ -19,6 +19,7 @@ import com.example.saleslogdevice.domain.usecase.FinalizeDayUseCase
 import com.example.saleslogdevice.domain.usecase.GenerateDailyReportUseCase
 import com.example.saleslogdevice.domain.usecase.ReceiveAudioUseCase
 import com.example.saleslogdevice.domain.usecase.ReceiveRecorderTextUseCase
+import com.example.saleslogdevice.domain.usecase.ResumeWorkSessionUseCase
 import com.example.saleslogdevice.domain.usecase.StartWorkSessionUseCase
 import com.example.saleslogdevice.service.AudioFileStore
 import com.example.saleslogdevice.service.LocationProvider
@@ -57,6 +58,7 @@ class ServiceLocator(appContext: Context) {
     val locationProvider = LocationProvider(appContext)
 
     val startWorkSession = StartWorkSessionUseCase(workSessions, userSettings, transactor)
+    val resumeWorkSession = ResumeWorkSessionUseCase(workSessions, transactor)
     val endWorkSession = EndWorkSessionUseCase(workSessions, visitLogs, transactor)
     val checkIn = CheckInUseCase(workSessions, visitLogs, transactor)
     val checkOut = CheckOutUseCase(workSessions, visitLogs)

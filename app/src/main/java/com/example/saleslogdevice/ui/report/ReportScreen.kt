@@ -4,13 +4,16 @@ import android.content.Intent
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -41,6 +44,7 @@ import java.io.File
 @Composable
 fun ReportScreen(
     onBack: () -> Unit,
+    onResumed: () -> Unit,
     viewModel: ReportViewModel = viewModel(),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
@@ -52,6 +56,10 @@ fun ReportScreen(
             snackbar.showSnackbar(it)
             viewModel.consumeMessage()
         }
+    }
+
+    LaunchedEffect(state.resumed) {
+        if (state.resumed) onResumed()
     }
 
     LaunchedEffect(state.csvSharePath) {
@@ -90,6 +98,16 @@ fun ReportScreen(
                 .verticalScroll(rememberScrollState()),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
+            if (state.canResume) {
+                Button(
+                    onClick = viewModel::resumeWork,
+                    modifier = Modifier.fillMaxWidth(),
+                ) {
+                    Icon(Icons.Filled.PlayArrow, contentDescription = null, modifier = Modifier.size(20.dp))
+                    Spacer(Modifier.size(8.dp))
+                    Text("営業に戻る")
+                }
+            }
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
                 Button(
                     onClick = viewModel::appendToSheets,

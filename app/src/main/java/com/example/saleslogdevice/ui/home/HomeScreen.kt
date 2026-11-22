@@ -22,6 +22,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Description
 import androidx.compose.material.icons.filled.Flag
+import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Logout
 import androidx.compose.material.icons.filled.Mic
@@ -44,6 +45,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -68,6 +70,7 @@ import com.example.saleslogdevice.ui.navigation.Routes
 fun HomeScreen(
     onCheckIn: () -> Unit,
     onReport: () -> Unit,
+    onHistory: () -> Unit,
     onSettings: () -> Unit,
     viewModel: HomeViewModel = viewModel(),
 ) {
@@ -137,6 +140,7 @@ fun HomeScreen(
             },
             onOpenRecorder = { openRecorder(context) },
             onReportPreview = onReport,
+            onHistory = onHistory,
         )
     }
 }
@@ -154,6 +158,7 @@ private fun Content(
     onSecondary: () -> Unit,
     onOpenRecorder: () -> Unit,
     onReportPreview: () -> Unit,
+    onHistory: () -> Unit,
 ) {
     Column(
         modifier = Modifier
@@ -226,6 +231,15 @@ private fun Content(
         }
 
         ReportLink(onClick = onReportPreview)
+
+        TextButton(
+            onClick = onHistory,
+            modifier = Modifier.fillMaxWidth(),
+        ) {
+            Icon(Icons.Filled.History, contentDescription = null, modifier = Modifier.size(18.dp))
+            Spacer(Modifier.size(8.dp))
+            Text("過去の日報を見る")
+        }
 
         Spacer(Modifier.height(4.dp))
         PrivacyNote()

@@ -7,10 +7,13 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.navArgument
 import com.example.saleslogdevice.ui.checkin.CheckInScreen
+import com.example.saleslogdevice.ui.history.HistoryScreen
 import com.example.saleslogdevice.ui.home.HomeScreen
 import com.example.saleslogdevice.ui.navigation.Routes
 import com.example.saleslogdevice.ui.report.ReportScreen
@@ -80,14 +83,33 @@ fun AppNavHost(
             HomeScreen(
                 onCheckIn = { nav.navigate(Routes.CHECK_IN) },
                 onReport = { nav.navigate(Routes.REPORT) },
+                onHistory = { nav.navigate(Routes.HISTORY) },
                 onSettings = { nav.navigate(Routes.SETTINGS) },
             )
         }
         composable(Routes.CHECK_IN) {
             CheckInScreen(onClose = { nav.popBackStack() })
         }
-        composable(Routes.REPORT) {
-            ReportScreen(onBack = { nav.popBackStack() })
+        composable(
+            route = Routes.REPORT_WITH_ARG,
+            arguments = listOf(
+                navArgument(Routes.REPORT_ARG_SESSION_ID) {
+                    type = NavType.LongType
+                    defaultValue = -1L
+                },
+            ),
+        ) {
+            ReportScreen(
+                onBack = { nav.popBackStack() },
+                // 「営業に戻る」後はホームへ戻す。履歴経由で開いていても確実にホームまで戻す。
+                onResumed = { nav.popBackStack(Routes.HOME, inclusive = false) },
+            )
+        }
+        composable(Routes.HISTORY) {
+            HistoryScreen(
+                onBack = { nav.popBackStack() },
+                onOpenReport = { sessionId -> nav.navigate(Routes.report(sessionId)) },
+            )
         }
         composable(Routes.SETTINGS) {
             SettingsScreen(onBack = { nav.popBackStack() })

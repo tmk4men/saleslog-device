@@ -14,6 +14,9 @@ class WorkSessionRepository(private val dao: WorkSessionDao) {
 
     suspend fun getById(id: Long): WorkSessionEntity? = dao.getById(id)
 
+    /** 開始済みセッションの履歴を新しい順に返す（過去の日報一覧用）。 */
+    suspend fun getRecent(): List<WorkSessionEntity> = dao.getRecent()
+
     /** 「今日のWORKINGセッション」のみを返す。前日以前のWORKINGはここに引っかからない。 */
     suspend fun getActiveWorking(): WorkSessionEntity? =
         dao.getByDateAndStatus(DateUtils.today(), SessionStatus.WORKING)

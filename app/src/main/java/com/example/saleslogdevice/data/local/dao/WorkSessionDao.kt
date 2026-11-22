@@ -20,6 +20,10 @@ interface WorkSessionDao {
     @Query("SELECT * FROM work_sessions WHERE id = :id")
     suspend fun getById(id: Long): WorkSessionEntity?
 
+    /** 実際に稼働した日（開始済み）の履歴を新しい順に返す。未開始のプレースホルダは除外する。 */
+    @Query("SELECT * FROM work_sessions WHERE startTime IS NOT NULL ORDER BY date DESC, id DESC")
+    suspend fun getRecent(): List<WorkSessionEntity>
+
     @Query("SELECT * FROM work_sessions WHERE status = :status ORDER BY id DESC LIMIT 1")
     suspend fun getLatestByStatus(status: SessionStatus): WorkSessionEntity?
 

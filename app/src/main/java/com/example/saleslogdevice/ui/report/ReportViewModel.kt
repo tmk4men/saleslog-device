@@ -2,8 +2,12 @@ package com.example.saleslogdevice.ui.report
 
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
+import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.viewModelScope
 import com.example.saleslogdevice.di.ServiceLocator
+import com.example.saleslogdevice.domain.model.SessionStatus
+import com.example.saleslogdevice.domain.util.DateUtils
+import com.example.saleslogdevice.ui.navigation.Routes
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -23,11 +27,22 @@ data class ReportUiState(
     val csvSharePath: String? = null,
     /** このセッションに紐づく録音一覧。 */
     val recordings: List<RecordingItem> = emptyList(),
+    /** 今日の終了済みセッションを表示中で、「営業に戻る」ボタンを出せるか。 */
+    val canResume: Boolean = false,
+    /** 営業に戻る処理が完了したら true。画面側がホームへ戻る合図に使う。 */
+    val resumed: Boolean = false,
 )
 
-class ReportViewModel(application: Application) : AndroidViewModel(application) {
+class ReportViewModel(
+    application: Application,
+    savedStateHandle: SavedStateHandle,
+) : AndroidViewModel(application) {
 
     private val locator = ServiceLocator.get(application)
+
+    /** 過去の日報を開いたときの sessionId。未指定（< 0）なら今日の日報を表示する。 */
+    private val sessionIdArg: Long? =
+        savedStateHandle.get<Long>(Routes.REPORT_ARG_SESSION_ID)?.takeIf { it >= 0 }
 
     private val _state = MutableStateFlow(ReportUiState())
     val state: StateFlow<ReportUiState> = _state.asStateFlow()
@@ -38,9 +53,9 @@ class ReportViewModel(application: Application) : AndroidViewModel(application) 
 
     fun load() = viewModelScope.launch {
         _state.update { it.copy(loading = true) }
-        val report = locator.generateDailyReport()
+        val report = locator.generateDailyReport(sessionIdArg)
         if (report == null) {
-            _state.update { it.copy(loading = false, markdown = "（本日の日報はまだありません）") }
+            _state.update { it.copy(loading = false, markdown = "（この日の日報はまだありません）") }
         } else {
             val visitNames = report.visits.associate { it.id to it.clientName }
             val recordings = locator.audioRecordings.getBySession(report.session.id).map { rec ->
@@ -58,9 +73,17 @@ class ReportViewModel(application: Application) : AndroidViewModel(application) 
                     markdown = report.markdown,
                     sessionId = report.session.id,
                     recordings = recordings,
+                    canResume = report.session.date == DateUtils.today() &&
+                        report.session.status == SessionStatus.FINISHED,
                 )
             }
         }
+    }
+
+    /** 今日の終了済みセッションを WORKING に戻し、もう一度営業に戻る。 */
+    fun resumeWork() = viewModelScope.launch {
+        locator.resumeWorkSession()
+        _state.update { it.copy(resumed = true) }
     }
 
     fun consumeMessage() = _state.update { it.copy(message = null) }

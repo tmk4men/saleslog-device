@@ -26,6 +26,7 @@ class CheckOutUseCase(
             checkOutTime = now,
             checkOutLatitude = location?.latitude,
             checkOutLongitude = location?.longitude,
+            checkOutAddress = location?.address,
             durationMinutes = DateUtils.diffMinutes(active.checkInTime, now),
         )
         visits.update(updated)

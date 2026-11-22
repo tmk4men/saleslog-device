@@ -24,7 +24,7 @@ class AppendActivityToSheetsUseCase(
     /**
      * 列構成:
      * 日付, 担当者, 営業開始, 営業終了, 訪問先, チェックイン, チェックアウト,
-     * 滞在(分), 緯度, 経度, 録音メモ有無, AI要約, Drive日報URL, 作成日時
+     * 滞在(分), 住所, 録音メモ有無, AI要約, Drive日報URL, 作成日時
      */
     suspend operator fun invoke(sessionId: Long, driveUrl: String?): SheetsSyncResult {
         val session = sessions.getById(sessionId)
@@ -85,8 +85,12 @@ class AppendActivityToSheetsUseCase(
         visit?.checkInTime?.let(DateUtils::formatTime).orEmpty(),
         visit?.checkOutTime?.let(DateUtils::formatTime).orEmpty(),
         durationMinutes?.toString().orEmpty(),
-        visit?.checkInLatitude?.let { "%.5f".format(it) }.orEmpty(),
-        visit?.checkInLongitude?.let { "%.5f".format(it) }.orEmpty(),
+        visit?.let { v ->
+            v.checkInAddress?.takeIf(String::isNotBlank)
+                ?: if (v.checkInLatitude != null && v.checkInLongitude != null)
+                    "${"%.5f".format(v.checkInLatitude)}, ${"%.5f".format(v.checkInLongitude)}"
+                else null
+        }.orEmpty(),
         if (hasMemo) "あり" else "なし",
         summaryCell,
         driveUrl.orEmpty(),

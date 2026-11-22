@@ -30,6 +30,7 @@ class EndWorkSessionUseCase(
             endTime = now,
             endLatitude = location?.latitude,
             endLongitude = location?.longitude,
+            endAddress = location?.address,
         )
         sessions.update(updated)
         EndWorkResult.Success(updated)
